@@ -19,6 +19,11 @@ This app is an offline-first medication reminder designed for reliability.
   - marks stale pending alarms as missed
   - re-seeds/schedules missing alarms after reboot or process death
 - iOS-safe rolling horizon scheduling (next 14 days)
+- English + Arabic localization support
+- MVVM-style presentation flow with dedicated view models
+- Animated splash screen and one-time landing page onboarding
+- Centralized app theming in `lib/theme/`
+- Alarm schedule CSV export/import
 
 ## Platform behavior
 

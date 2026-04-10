@@ -1,0 +1,54 @@
+{
+  "@@locale": "en",
+  "appTitle": "Medication Alarm",
+  "exactAlarmsEnabled": "Exact alarms enabled",
+  "exactAlarmsDisabled": "Exact alarms not enabled",
+  "grantAlarmPermissions": "Grant Alarm Permissions",
+  "exactAlarmSettings": "Exact Alarm Settings",
+  "batteryOptimization": "Battery Optimization",
+  "addMedicationSchedule": "Add medication schedule",
+  "medicationName": "Medication name",
+  "dosageHint": "Dosage (e.g. 2mg)",
+  "requiredField": "Required",
+  "timeLabel": "Time: {time}",
+  "@timeLabel": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "pickTime": "Pick time",
+  "saveSchedule": "Save schedule",
+  "activeSchedules": "Active schedules",
+  "noMedicationsYet": "No medications yet.",
+  "exportCsv": "Export CSV",
+  "importCsv": "Import CSV",
+  "csvExportedAt": "CSV exported to: {path}",
+  "@csvExportedAt": {
+    "placeholders": {
+      "path": {}
+    }
+  },
+  "csvImportDone": "Imported {count} schedules",
+  "@csvImportDone": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "csvImportInvalid": "Invalid CSV file",
+  "csvImportCancelled": "Import cancelled",
+  "landingTitle": "Stay on track with your medication",
+  "landingSubtitle": "Create reliable reminders, snooze when needed, and never miss a dose.",
+  "getStarted": "Get Started",
+  "splashTitle": "Medication Alarm",
+  "takeNow": "TAKE NOW",
+  "snoozeTen": "SNOOZE 10 MIN",
+  "skip": "SKIP",
+  "medicationTime": "Medication time",
+  "snoozedMedicationAlarm": "Snoozed medication alarm",
+  "alarmScreenTitle": "Medication Alarm",
+  "csvHeaderMedicationName": "medication_name",
+  "csvHeaderDosage": "dosage",
+  "csvHeaderHour": "hour",
+  "csvHeaderMinute": "minute",
+  "csvHeaderTimezone": "timezone_name"
+}

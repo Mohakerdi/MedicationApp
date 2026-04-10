@@ -1,0 +1,54 @@
+{
+  "@@locale": "ar",
+  "appTitle": "منبه الدواء",
+  "exactAlarmsEnabled": "تم تفعيل المنبهات الدقيقة",
+  "exactAlarmsDisabled": "المنبهات الدقيقة غير مفعلة",
+  "grantAlarmPermissions": "منح صلاحيات المنبه",
+  "exactAlarmSettings": "إعدادات المنبهات الدقيقة",
+  "batteryOptimization": "تحسين البطارية",
+  "addMedicationSchedule": "إضافة جدول دواء",
+  "medicationName": "اسم الدواء",
+  "dosageHint": "الجرعة (مثال: 2mg)",
+  "requiredField": "مطلوب",
+  "timeLabel": "الوقت: {time}",
+  "@timeLabel": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "pickTime": "اختيار الوقت",
+  "saveSchedule": "حفظ الجدول",
+  "activeSchedules": "الجداول النشطة",
+  "noMedicationsYet": "لا توجد أدوية بعد.",
+  "exportCsv": "تصدير CSV",
+  "importCsv": "استيراد CSV",
+  "csvExportedAt": "تم تصدير CSV إلى: {path}",
+  "@csvExportedAt": {
+    "placeholders": {
+      "path": {}
+    }
+  },
+  "csvImportDone": "تم استيراد {count} جدول",
+  "@csvImportDone": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "csvImportInvalid": "ملف CSV غير صالح",
+  "csvImportCancelled": "تم إلغاء الاستيراد",
+  "landingTitle": "التزم بأدويتك بسهولة",
+  "landingSubtitle": "أنشئ تذكيرات موثوقة، وأجّل عند الحاجة، ولا تفوّت أي جرعة.",
+  "getStarted": "ابدأ الآن",
+  "splashTitle": "منبه الدواء",
+  "takeNow": "تناول الآن",
+  "snoozeTen": "غفوة 10 دقائق",
+  "skip": "تخطي",
+  "medicationTime": "موعد الدواء",
+  "snoozedMedicationAlarm": "منبه دواء مؤجل",
+  "alarmScreenTitle": "منبه الدواء",
+  "csvHeaderMedicationName": "medication_name",
+  "csvHeaderDosage": "dosage",
+  "csvHeaderHour": "hour",
+  "csvHeaderMinute": "minute",
+  "csvHeaderTimezone": "timezone_name"
+}
