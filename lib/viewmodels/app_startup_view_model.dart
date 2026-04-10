@@ -19,11 +19,14 @@ class AppStartupViewModel extends ChangeNotifier {
     }
     _initialized = true;
     try {
-      final results = await Future.wait<Object>([
-        SharedPreferences.getInstance().timeout(_prefsInitTimeout),
-        Future<Object>.delayed(_minimumSplashDuration),
+      final prefsFuture = SharedPreferences.getInstance().timeout(
+        _prefsInitTimeout,
+      );
+      await Future.wait<void>([
+        prefsFuture.then<void>((_) {}),
+        Future<void>.delayed(_minimumSplashDuration),
       ]);
-      final prefs = results.first as SharedPreferences;
+      final prefs = await prefsFuture;
       final seenLanding = prefs.getBool(_seenLandingKey) ?? false;
       _stage = seenLanding ? StartupStage.home : StartupStage.landing;
     } catch (error) {
