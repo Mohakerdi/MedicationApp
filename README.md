@@ -7,9 +7,10 @@
 ---
 
 ## A quick feel ✨
-
-![Clock GIF](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmFsMXhjeDFvOGVnMnJtY3RsOWwyNzlub3YwcWpkdGI0enlzZW1laiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/OBnwDJW77acLK/giphy.gif)
-![Pill GIF](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaWxkbnVnNTd5d3h6MnJuM2JmOWlsajh4ejQycGk0dHo3NGM5cmgxbCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/kIuDGjucy9vsMRaT63/giphy.gif)
+<p align="center">
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmFsMXhjeDFvOGVnMnJtY3RsOWwyNzlub3YwcWpkdGI0enlzZW1laiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/OBnwDJW77acLK/giphy.gif" width="45%" />
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaWxkbnVnNTd5d3h6MnJuM2JmOWlsajh4ejQycGk0dHo3NGM5cmgxbCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/kIuDGjucy9vsMRaT63/giphy.gif" width="45%" />
+</p>
 
 ---
 
