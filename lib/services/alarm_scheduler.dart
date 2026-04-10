@@ -5,7 +5,6 @@ import 'package:timezone/timezone.dart' as tz;
 import '../data/app_database.dart';
 import '../models/entities.dart';
 import 'notification_service.dart';
-import 'schedule_generator.dart';
 
 class AlarmScheduler {
   AlarmScheduler({
@@ -26,7 +25,6 @@ class AlarmScheduler {
       }
     }
 
-    final location = _safeLocation(plan.schedule.timezoneName);
     final intervalDays = plan.medication.kind == MedicationKind.interval
         ? plan.medication.intervalDays
         : 1;
@@ -34,11 +32,10 @@ class AlarmScheduler {
         ? 1
         : (scheduleHorizonDays / intervalDays).ceil();
 
-    final occurrences = ScheduleGenerator.generateOccurrences(
-      location: location,
+    final occurrences = _generateDeviceLocalOccurrences(
       hour: plan.schedule.hour,
       minute: plan.schedule.minute,
-      fromUtc: fromUtc ?? DateTime.now().toUtc(),
+      fromLocal: (fromUtc ?? DateTime.now().toUtc()).toLocal(),
       occurrences: occurrenceCount,
       everyDays: intervalDays,
     );
@@ -66,7 +63,7 @@ class AlarmScheduler {
           arabic: 'موعد الدواء',
         ),
         body: '${plan.medication.name} • ${plan.medication.dosage}',
-        when: occurrence,
+        when: tz.TZDateTime.from(occurrence, tz.UTC),
       );
     }
   }
@@ -103,7 +100,7 @@ class AlarmScheduler {
           arabic: 'موعد الدواء',
         ),
         body: '${full.medication.name} • ${full.medication.dosage}',
-        when: tz.TZDateTime.from(alarm.triggerAt.toLocal(), tz.local),
+        when: tz.TZDateTime.from(alarm.triggerAt.toLocal(), tz.UTC),
       );
     }
   }
@@ -164,7 +161,7 @@ class AlarmScheduler {
         arabic: 'منبه دواء مؤجل',
       ),
       body: '${full.medication.name} • ${full.medication.dosage}',
-      when: tz.TZDateTime.from(triggerUtc.toLocal(), tz.local),
+      when: tz.TZDateTime.from(triggerUtc.toLocal(), tz.UTC),
     );
   }
 
@@ -175,11 +172,38 @@ class AlarmScheduler {
     return languageCode == 'ar' ? arabic : english;
   }
 
-  tz.Location _safeLocation(String timezoneName) {
-    try {
-      return tz.getLocation(timezoneName);
-    } catch (_) {
-      return tz.local;
+  List<DateTime> _generateDeviceLocalOccurrences({
+    required int hour,
+    required int minute,
+    required DateTime fromLocal,
+    required int occurrences,
+    int everyDays = 1,
+  }) {
+    final normalizedEveryDays = everyDays < 1 ? 1 : everyDays;
+    var cursor = DateTime(
+      fromLocal.year,
+      fromLocal.month,
+      fromLocal.day,
+      hour,
+      minute,
+    );
+
+    if (!cursor.isAfter(fromLocal)) {
+      cursor = cursor.add(Duration(days: normalizedEveryDays));
+      cursor = DateTime(
+        cursor.year,
+        cursor.month,
+        cursor.day,
+        hour,
+        minute,
+      );
     }
+
+    final dates = <DateTime>[];
+    for (var i = 0; i < occurrences; i++) {
+      final day = cursor.add(Duration(days: i * normalizedEveryDays));
+      dates.add(DateTime(day.year, day.month, day.day, hour, minute));
+    }
+    return dates;
   }
 }
