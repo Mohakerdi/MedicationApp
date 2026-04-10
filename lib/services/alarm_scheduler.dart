@@ -190,19 +190,20 @@ class AlarmScheduler {
 
     if (!cursor.isAfter(fromLocal)) {
       cursor = cursor.add(Duration(days: normalizedEveryDays));
-      cursor = DateTime(
-        cursor.year,
-        cursor.month,
-        cursor.day,
-        hour,
-        minute,
-      );
     }
 
     final dates = <DateTime>[];
     for (var i = 0; i < occurrences; i++) {
-      final day = cursor.add(Duration(days: i * normalizedEveryDays));
-      dates.add(DateTime(day.year, day.month, day.day, hour, minute));
+      final occurrence = cursor.add(Duration(days: i * normalizedEveryDays));
+      dates.add(
+        DateTime(
+          occurrence.year,
+          occurrence.month,
+          occurrence.day,
+          hour,
+          minute,
+        ),
+      );
     }
     return dates;
   }
