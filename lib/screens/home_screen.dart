@@ -4,6 +4,7 @@ import 'package:android_intent_plus/android_intent.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:medecation_app/l10n/app_localizations.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
@@ -267,7 +268,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     const intent =
         AndroidIntent(action: 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM');
-    await intent.launch();
+    try {
+      await intent.launch();
+    } on PlatformException {
+      // Some Android builds do not expose this settings activity.
+    }
   }
 
   Future<void> _openBatteryOptimizationSettings() async {
