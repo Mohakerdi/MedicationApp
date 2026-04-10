@@ -24,6 +24,7 @@ class HomeViewModel extends ChangeNotifier {
   final AlarmScheduler scheduler;
   final NotificationService notifications;
   final CsvAlarmTransferService csvService;
+  static const String _fallbackTimezoneName = 'UTC';
 
   List<MedicationPlan> _plans = const [];
   bool _exactAlarmGranted = true;
@@ -77,7 +78,7 @@ class HomeViewModel extends ChangeNotifier {
     } catch (error) {
       debugPrint('Timezone lookup failed on $defaultTargetPlatform: $error');
     }
-    return 'UTC';
+    return _fallbackTimezoneName;
   }
 
   Future<AlarmWithMedication?> getAlarmById(int alarmId) {
