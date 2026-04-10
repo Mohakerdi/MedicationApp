@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import 'app.dart';
@@ -11,19 +9,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final notifications = NotificationService.instance;
-  int? initialAlarmId;
   try {
-    initialAlarmId = await notifications.initialize();
+    await notifications.initialize();
   } catch (_) {
-    initialAlarmId = null;
+    // Ignore initialization errors and continue app startup.
   }
-  unawaited(
-    notifications.requestUserPermissions().catchError((error, _) {
-      debugPrint(
-        'Request notification/alarm permissions failed: ${error.toString()}',
-      );
-    }),
-  );
+  notifications.requestUserPermissions().catchError((error, _) {
+    debugPrint(
+      'Request notification/alarm permissions failed: ${error.toString()}',
+    );
+  });
   final database = AppDatabase.instance;
   final scheduler = AlarmScheduler(database: database, notifications: notifications);
 
@@ -32,7 +27,6 @@ Future<void> main() async {
       database: database,
       notifications: notifications,
       scheduler: scheduler,
-      initialAlarmId: initialAlarmId,
     ),
   );
 }

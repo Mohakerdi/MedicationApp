@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +13,6 @@ import '../services/csv_alarm_transfer_service.dart';
 import '../services/notification_service.dart';
 import '../viewmodels/app_settings_view_model.dart';
 import '../viewmodels/home_view_model.dart';
-import 'alarm_screen.dart';
 import 'widgets/home_cards.dart';
 import 'widgets/options_cards.dart';
 
@@ -26,14 +23,12 @@ class HomeScreen extends StatefulWidget {
     required this.scheduler,
     required this.notifications,
     required this.settingsViewModel,
-    this.initialAlarmId,
   });
 
   final AppDatabase database;
   final AlarmScheduler scheduler;
   final NotificationService notifications;
   final AppSettingsViewModel settingsViewModel;
-  final int? initialAlarmId;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -42,7 +37,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _defaultHour = 8;
   static const _defaultMinute = 0;
-  static const _recentlyOpenedAlarmCacheLimit = 50;
 
   late final HomeViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
@@ -58,14 +52,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _doseCount = 1;
   MedicationKind _medicationKind = MedicationKind.daily;
   int _intervalDays = 2;
-  StreamSubscription<int>? _selectionSubscription;
-  Timer? _dueAlarmTimer;
-  bool _openingAlarmScreen = false;
-  bool _dueAlarmCheckInFlight = false;
-  final List<int> _recentlyOpenedAlarmIds = <int>[];
   int _tabIndex = 0;
   bool _tutorialPresented = false;
-  bool _tutorialVisible = false;
 
   int get _activeDoseCount => _medicationKind == MedicationKind.daily ? _doseCount : 1;
 
@@ -79,26 +67,11 @@ class _HomeScreenState extends State<HomeScreen> {
       csvService: CsvAlarmTransferService(),
     );
     _viewModel.load();
-    _selectionSubscription = widget.notifications.alarmSelectionStream.listen(
-      _openAlarmById,
-    );
-    if (widget.initialAlarmId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _openAlarmById(widget.initialAlarmId!);
-      });
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndOpenDueAlarm());
-    _dueAlarmTimer = Timer.periodic(
-      const Duration(seconds: 5),
-      (_) => _checkAndOpenDueAlarm(),
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _showTutorialIfNeeded());
   }
 
   @override
   void dispose() {
-    _selectionSubscription?.cancel();
-    _dueAlarmTimer?.cancel();
     _nameController.dispose();
     _dosageController.dispose();
     _pillCountController.dispose();
@@ -117,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     _tutorialPresented = true;
-    _tutorialVisible = true;
     final l10n = AppLocalizations.of(context)!;
     final targets = [
       TargetFocus(
@@ -166,11 +138,9 @@ class _HomeScreenState extends State<HomeScreen> {
       hideSkip: false,
       textSkip: l10n.skip,
       onFinish: () {
-        _tutorialVisible = false;
         widget.settingsViewModel.markHomeTutorialSeen();
       },
       onSkip: () {
-        _tutorialVisible = false;
         widget.settingsViewModel.markHomeTutorialSeen();
         return true;
       },
@@ -254,61 +224,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Interval schedule';
       case MedicationKind.oneTime:
         return 'One-time';
-    }
-  }
-
-  Future<void> _openAlarmById(int alarmId) async {
-    final alarm = await _viewModel.getAlarmById(alarmId);
-    if (!mounted || alarm == null) {
-      return;
-    }
-    await _openAlarm(alarm);
-  }
-
-  Future<void> _openAlarm(AlarmWithMedication alarm) async {
-    if (!mounted) {
-      return;
-    }
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => AlarmScreen(
-          alarm: alarm,
-          alarmSound: widget.settingsViewModel.selectedSound,
-          onTakeNow: () => widget.scheduler.markTaken(alarm.alarm.id),
-          onSnooze: () => widget.scheduler.snooze(alarmId: alarm.alarm.id),
-          onSkip: () => widget.scheduler.markSkipped(alarm.alarm.id),
-        ),
-      ),
-    );
-    await _viewModel.load();
-  }
-
-  Future<void> _checkAndOpenDueAlarm() async {
-    if (!mounted || _openingAlarmScreen || _tutorialVisible || _dueAlarmCheckInFlight) {
-      return;
-    }
-    try {
-      _dueAlarmCheckInFlight = true;
-      final dueAlarm = await _viewModel.getDueAlarmForImmediateDisplay();
-      if (!mounted || dueAlarm == null) {
-        return;
-      }
-      final alarmId = dueAlarm.alarm.id;
-      if (_recentlyOpenedAlarmIds.contains(alarmId)) {
-        return;
-      }
-
-      _openingAlarmScreen = true;
-      _recentlyOpenedAlarmIds.add(alarmId);
-      await _openAlarm(dueAlarm);
-    } finally {
-      _dueAlarmCheckInFlight = false;
-      _openingAlarmScreen = false;
-      final overflow = _recentlyOpenedAlarmIds.length - _recentlyOpenedAlarmCacheLimit;
-      if (overflow > 0) {
-        _recentlyOpenedAlarmIds.removeRange(0, overflow);
-      }
     }
   }
 
