@@ -24,6 +24,11 @@ This app is an offline-first medication reminder designed for reliability.
 - Animated splash screen and one-time landing page onboarding
 - Centralized app theming in `lib/theme/`
 - Alarm schedule CSV export/import
+- Theme options (system/light/dark) and language switching
+- One-time tutorial coach marks for first open
+- Options tab for app controls (delete all, import/export, about/help/support)
+- Selectable alarm sounds from bundled assets or device files
+- Windows/Linux desktop database compatibility via `sqflite_common_ffi`
 
 ## Platform behavior
 
