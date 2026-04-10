@@ -203,7 +203,7 @@ class NotificationService {
     }
   }
 
-  void _onNotificationResponse(NotificationResponse response) {
+  void _onNotificationResponse(NotificationResponse _) {
     // No in-app popup handling. Notification taps open the app normally.
   }
 
@@ -214,16 +214,18 @@ class NotificationService {
       resolvedSoundId = settings.selectedSoundId;
     }
 
+    final normalizedSoundId = resolvedSoundId?.trim() ?? '';
+
     for (final sound in defaultAlarmSounds) {
-      if (sound.id == resolvedSoundId) {
+      if (sound.id == normalizedSoundId) {
         return sound;
       }
     }
-    if (resolvedSoundId.startsWith('device:')) {
-      final path = resolvedSoundId.replaceFirst('device:', '');
+    if (normalizedSoundId.startsWith('device:')) {
+      final path = normalizedSoundId.replaceFirst('device:', '');
       if (path.isNotEmpty) {
         return AppAlarmSound(
-          id: resolvedSoundId,
+          id: normalizedSoundId,
           label: 'Device sound',
           type: AppAlarmSoundType.device,
           path: path,
@@ -263,11 +265,12 @@ class NotificationService {
   }
 
   String _channelIdForSound(String soundId) {
-    final hash = soundId.codeUnits.fold<int>(
-      0,
-      (value, unit) => (value * 31 + unit) & 0x3fffffff,
-    );
-    return 'medication_alarm_channel_$hash';
+    final normalized = soundId
+        .toLowerCase()
+        .replaceAll(RegExp('[^a-z0-9_]'), '_');
+    final safeId = normalized.isEmpty ? 'default' : normalized;
+    final cappedId = safeId.length > 80 ? safeId.substring(0, 80) : safeId;
+    return 'medication_alarm_channel_$cappedId';
   }
 
   Future<void> _ensureAndroidChannel({
