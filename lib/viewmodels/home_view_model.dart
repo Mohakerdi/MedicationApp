@@ -53,7 +53,7 @@ class HomeViewModel extends ChangeNotifier {
     required int intervalDays,
     required int totalPills,
   }) async {
-    final timezoneName = tz.local.name;
+    final timezoneName = _resolveTimezoneName();
     final plans = await database.createMedicationPlans(
       name: name.trim(),
       dosage: dosage.trim(),
@@ -67,6 +67,15 @@ class HomeViewModel extends ChangeNotifier {
       await scheduler.seedForPlan(plan);
     }
     await load();
+  }
+
+  String _resolveTimezoneName() {
+    try {
+      return tz.local.name;
+    } catch (_) {
+      final localName = DateTime.now().timeZoneName.trim();
+      return localName.isEmpty ? 'UTC' : localName;
+    }
   }
 
   Future<AlarmWithMedication?> getAlarmById(int alarmId) {
