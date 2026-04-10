@@ -19,13 +19,11 @@ class MedicationApp extends StatefulWidget {
     required this.database,
     required this.notifications,
     required this.scheduler,
-    this.initialAlarmId,
   });
 
   final AppDatabase database;
   final NotificationService notifications;
   final AlarmScheduler scheduler;
-  final int? initialAlarmId;
 
   @override
   State<MedicationApp> createState() => _MedicationAppState();
@@ -78,7 +76,6 @@ class _MedicationAppState extends State<MedicationApp> {
             database: widget.database,
             scheduler: widget.scheduler,
             notifications: widget.notifications,
-            initialAlarmId: widget.initialAlarmId,
             settingsViewModel: _settingsViewModel,
           ),
         },

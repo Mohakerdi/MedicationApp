@@ -11,11 +11,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final notifications = NotificationService.instance;
-  int? initialAlarmId;
   try {
-    initialAlarmId = await notifications.initialize();
+    await notifications.initialize();
   } catch (_) {
-    initialAlarmId = null;
+    // Ignore initialization errors and continue app startup.
   }
   unawaited(
     notifications.requestUserPermissions().catchError((error, _) {
@@ -32,7 +31,6 @@ Future<void> main() async {
       database: database,
       notifications: notifications,
       scheduler: scheduler,
-      initialAlarmId: initialAlarmId,
     ),
   );
 }
