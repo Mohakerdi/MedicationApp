@@ -7,8 +7,10 @@ import 'screens/home_screen.dart';
 import 'screens/landing_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/alarm_scheduler.dart';
+import 'services/app_settings_service.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
+import 'viewmodels/app_settings_view_model.dart';
 import 'viewmodels/app_startup_view_model.dart';
 
 class MedicationApp extends StatefulWidget {
@@ -31,27 +33,35 @@ class MedicationApp extends StatefulWidget {
 
 class _MedicationAppState extends State<MedicationApp> {
   final AppStartupViewModel _startupViewModel = AppStartupViewModel();
+  final AppSettingsViewModel _settingsViewModel = AppSettingsViewModel(
+    settingsService: AppSettingsService(),
+  );
 
   @override
   void initState() {
     super.initState();
     _startupViewModel.initialize();
+    _settingsViewModel.initialize();
   }
 
   @override
   void dispose() {
     _startupViewModel.dispose();
+    _settingsViewModel.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _startupViewModel,
+      animation: Listenable.merge([_startupViewModel, _settingsViewModel]),
       builder: (context, _) => MaterialApp(
         debugShowCheckedModeBanner: false,
         onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
         theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: _settingsViewModel.themeMode,
+        locale: _settingsViewModel.locale,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -69,6 +79,7 @@ class _MedicationAppState extends State<MedicationApp> {
             scheduler: widget.scheduler,
             notifications: widget.notifications,
             initialAlarmId: widget.initialAlarmId,
+            settingsViewModel: _settingsViewModel,
           ),
         },
       ),

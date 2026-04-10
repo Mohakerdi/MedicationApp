@@ -32,9 +32,14 @@ class HomeViewModel extends ChangeNotifier {
   bool get exactAlarmGranted => _exactAlarmGranted;
 
   Future<void> load() async {
-    await scheduler.reconcileOnStartup();
+    try {
+      await scheduler.reconcileOnStartup();
+    } catch (_) {}
     final plans = await database.getMedicationPlans();
-    final exact = await notifications.canScheduleExactAlarms();
+    bool exact = true;
+    try {
+      exact = await notifications.canScheduleExactAlarms();
+    } catch (_) {}
     _plans = plans;
     _exactAlarmGranted = exact;
     notifyListeners();
@@ -99,5 +104,11 @@ class HomeViewModel extends ChangeNotifier {
     }
     await load();
     return imported;
+  }
+
+  Future<void> deleteAllData() async {
+    await notifications.cancelAll();
+    await database.deleteAllData();
+    await load();
   }
 }

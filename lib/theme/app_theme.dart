@@ -19,4 +19,21 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData dark() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: AppColors.seed,
+      brightness: Brightness.dark,
+      primary: AppColors.primary,
+      secondary: AppColors.secondary,
+    );
+    return ThemeData(
+      colorScheme: scheme,
+      useMaterial3: true,
+      appBarTheme: const AppBarTheme(centerTitle: true),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(),
+      ),
+    );
+  }
 }

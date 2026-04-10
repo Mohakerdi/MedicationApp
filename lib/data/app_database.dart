@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../models/entities.dart';
 
@@ -9,12 +11,14 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   Database? _database;
+  bool _ffiInitialized = false;
 
   Future<Database> get database async {
     if (_database != null) {
       return _database!;
     }
 
+    _configureFactoryForDesktop();
     final dbPath = await getDatabasesPath();
     final path = p.join(dbPath, 'medication_alarm.db');
     _database = await openDatabase(
@@ -23,6 +27,19 @@ class AppDatabase {
       onCreate: _onCreate,
     );
     return _database!;
+  }
+
+  void _configureFactoryForDesktop() {
+    if (_ffiInitialized || kIsWeb) {
+      return;
+    }
+    if (defaultTargetPlatform != TargetPlatform.windows &&
+        defaultTargetPlatform != TargetPlatform.linux) {
+      return;
+    }
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+    _ffiInitialized = true;
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -311,5 +328,15 @@ class AppDatabase {
       limit: 1,
     );
     return rows.isNotEmpty;
+  }
+
+  Future<void> deleteAllData() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('dose_logs');
+      await txn.delete('alarm_instances');
+      await txn.delete('dose_schedules');
+      await txn.delete('medications');
+    });
   }
 }

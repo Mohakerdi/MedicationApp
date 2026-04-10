@@ -35,18 +35,22 @@ class NotificationService {
       iOS: darwinSettings,
     );
 
-    await _plugin.initialize(
-      settings,
-      onDidReceiveNotificationResponse: _onNotificationResponse,
-      onDidReceiveBackgroundNotificationResponse:
-          notificationTapBackgroundHandler,
-    );
+    try {
+      await _plugin.initialize(
+        settings,
+        onDidReceiveNotificationResponse: _onNotificationResponse,
+        onDidReceiveBackgroundNotificationResponse:
+            notificationTapBackgroundHandler,
+      );
 
-    await _createAndroidChannels();
+      await _createAndroidChannels();
 
-    final launchDetails = await _plugin.getNotificationAppLaunchDetails();
-    final payload = launchDetails?.notificationResponse?.payload;
-    return _extractAlarmId(payload);
+      final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+      final payload = launchDetails?.notificationResponse?.payload;
+      return _extractAlarmId(payload);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _createAndroidChannels() async {
@@ -70,34 +74,40 @@ class NotificationService {
   }
 
   Future<void> requestUserPermissions() async {
-    final androidPlatform =
-        _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    await androidPlatform?.requestNotificationsPermission();
-    await androidPlatform?.requestExactAlarmsPermission();
-    await androidPlatform?.requestFullScreenIntentPermission();
+    try {
+      final androidPlatform =
+          _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await androidPlatform?.requestNotificationsPermission();
+      await androidPlatform?.requestExactAlarmsPermission();
+      await androidPlatform?.requestFullScreenIntentPermission();
 
-    final iosPlatform =
-        _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >();
-    await iosPlatform?.requestPermissions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+      final iosPlatform =
+          _plugin.resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      await iosPlatform?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    } catch (_) {}
   }
 
   Future<bool> canScheduleExactAlarms() async {
-    final androidPlatform =
-        _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    if (androidPlatform == null) {
+    try {
+      final androidPlatform =
+          _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (androidPlatform == null) {
+        return true;
+      }
+      return await androidPlatform.canScheduleExactNotifications() ?? false;
+    } catch (_) {
       return true;
     }
-    return await androidPlatform.canScheduleExactNotifications() ?? false;
   }
 
   Future<void> scheduleAlarm({
@@ -128,26 +138,40 @@ class NotificationService {
       interruptionLevel: InterruptionLevel.timeSensitive,
     );
 
-    await _plugin.zonedSchedule(
-      alarmId,
-      title,
-      body,
-      when,
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      payload: 'alarm:$alarmId',
-    );
+    try {
+      await _plugin.zonedSchedule(
+        alarmId,
+        title,
+        body,
+        when,
+        const NotificationDetails(android: androidDetails, iOS: iosDetails),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: 'alarm:$alarmId',
+      );
+    } catch (_) {}
   }
 
-  Future<void> cancelAlarm(int alarmId) {
-    return _plugin.cancel(alarmId);
+  Future<void> cancelAlarm(int alarmId) async {
+    try {
+      await _plugin.cancel(alarmId);
+    } catch (_) {}
+  }
+
+  Future<void> cancelAll() async {
+    try {
+      await _plugin.cancelAll();
+    } catch (_) {}
   }
 
   Future<Set<int>> getPendingNotificationIds() async {
-    final pending = await _plugin.pendingNotificationRequests();
-    return pending.map((item) => item.id).toSet();
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      return pending.map((item) => item.id).toSet();
+    } catch (_) {
+      return {};
+    }
   }
 
   void _onNotificationResponse(NotificationResponse response) {

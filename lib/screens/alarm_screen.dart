@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../models/app_settings.dart';
 import '../models/entities.dart';
+import '../services/alarm_sound_service.dart';
 import '../viewmodels/alarm_view_model.dart';
 
 class AlarmScreen extends StatefulWidget {
@@ -14,32 +16,39 @@ class AlarmScreen extends StatefulWidget {
     required this.onTakeNow,
     required this.onSnooze,
     required this.onSkip,
+    required this.alarmSound,
   });
 
   final AlarmWithMedication alarm;
   final Future<void> Function() onTakeNow;
   final Future<void> Function() onSnooze;
   final Future<void> Function() onSkip;
+  final AppAlarmSound alarmSound;
 
   @override
   State<AlarmScreen> createState() => _AlarmScreenState();
 }
 
 class _AlarmScreenState extends State<AlarmScreen> {
-  Timer? _beepTimer;
+  Timer? _fallbackBeepTimer;
+  final AlarmSoundService _soundService = AlarmSoundService();
   final AlarmViewModel _viewModel = AlarmViewModel();
 
   @override
   void initState() {
     super.initState();
-    _beepTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      SystemSound.play(SystemSoundType.alert);
+    _soundService.playLoop(widget.alarmSound).catchError((_) {
+      _fallbackBeepTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+        SystemSound.play(SystemSoundType.alert);
+      });
     });
   }
 
   @override
   void dispose() {
-    _beepTimer?.cancel();
+    _fallbackBeepTimer?.cancel();
+    _soundService.stop();
+    _soundService.dispose();
     super.dispose();
   }
 
