@@ -8,6 +8,7 @@ import 'package:medecation_app/l10n/app_localizations.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../data/app_database.dart';
+import '../models/entities.dart';
 import '../services/alarm_scheduler.dart';
 import '../services/csv_alarm_transfer_service.dart';
 import '../services/notification_service.dart';
@@ -43,10 +44,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
+  final _pillCountController = TextEditingController(text: '1');
   final _addCardKey = GlobalKey();
   final _saveButtonKey = GlobalKey();
   final _optionsTabKey = GlobalKey();
-  TimeOfDay _time = const TimeOfDay(hour: _defaultHour, minute: _defaultMinute);
+  List<TimeOfDay> _times = const [
+    TimeOfDay(hour: _defaultHour, minute: _defaultMinute),
+  ];
+  int _doseCount = 1;
+  MedicationKind _medicationKind = MedicationKind.daily;
+  int _intervalDays = 2;
   StreamSubscription<int>? _selectionSubscription;
   int _tabIndex = 0;
   bool _tutorialPresented = false;
@@ -77,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _selectionSubscription?.cancel();
     _nameController.dispose();
     _dosageController.dispose();
+    _pillCountController.dispose();
     _viewModel.dispose();
     super.dispose();
   }
@@ -145,21 +153,79 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    final totalPills = int.tryParse(_pillCountController.text.trim()) ?? 0;
+    if (_medicationKind == MedicationKind.oneTime && totalPills < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pill count should be at least 1')),
+      );
+      return;
+    }
+
     await _viewModel.addMedication(
       name: _nameController.text,
       dosage: _dosageController.text,
-      hour: _time.hour,
-      minute: _time.minute,
+      times: _times
+          .take(_medicationKind == MedicationKind.daily ? _doseCount : 1)
+          .map((time) => (hour: time.hour, minute: time.minute))
+          .toList(),
+      kind: _medicationKind,
+      intervalDays: _medicationKind == MedicationKind.interval ? _intervalDays : 1,
+      totalPills: _medicationKind == MedicationKind.oneTime ? totalPills : 0,
     );
     _nameController.clear();
     _dosageController.clear();
+    _pillCountController.text = '1';
     if (mounted) {
       setState(
-        () => _time = const TimeOfDay(
-          hour: _defaultHour,
-          minute: _defaultMinute,
-        ),
+        () {
+          _times = const [TimeOfDay(hour: _defaultHour, minute: _defaultMinute)];
+          _doseCount = 1;
+          _medicationKind = MedicationKind.daily;
+          _intervalDays = 2;
+        },
       );
+    }
+  }
+
+  Future<void> _pickDoseTime(int index) async {
+    final initial = index < _times.length ? _times[index] : _times.last;
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked == null) {
+      return;
+    }
+    setState(() {
+      final next = [..._times];
+      while (next.length <= index) {
+        next.add(next.last);
+      }
+      next[index] = picked;
+      _times = next;
+    });
+  }
+
+  Future<void> _editSchedule(MedicationPlan plan) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: plan.schedule.hour, minute: plan.schedule.minute),
+    );
+    if (picked == null) {
+      return;
+    }
+    await _viewModel.editScheduleTime(
+      plan: plan,
+      hour: picked.hour,
+      minute: picked.minute,
+    );
+  }
+
+  String _kindLabel(MedicationKind kind) {
+    switch (kind) {
+      case MedicationKind.daily:
+        return 'Daily';
+      case MedicationKind.interval:
+        return 'Interval schedule';
+      case MedicationKind.oneTime:
+        return 'One-time';
     }
   }
 
@@ -389,24 +455,110 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(l10n.timeLabel(_time.format(context))),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: _time,
-                          );
-                          if (picked != null) {
-                            setState(() => _time = picked);
-                          }
-                        },
-                        child: Text(l10n.pickTime),
-                      ),
-                    ],
+                  DropdownButtonFormField<MedicationKind>(
+                    value: _medicationKind,
+                    decoration: const InputDecoration(labelText: 'Medication type'),
+                    items: MedicationKind.values
+                        .map(
+                          (kind) => DropdownMenuItem<MedicationKind>(
+                            value: kind,
+                            child: Text(_kindLabel(kind)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() => _medicationKind = value);
+                    },
                   ),
+                  const SizedBox(height: 8),
+                  if (_medicationKind == MedicationKind.daily)
+                    DropdownButtonFormField<int>(
+                      value: _doseCount,
+                      decoration: const InputDecoration(labelText: 'Doses per day'),
+                      items: const [
+                        DropdownMenuItem(value: 1, child: Text('1 dose')),
+                        DropdownMenuItem(value: 2, child: Text('2 doses')),
+                        DropdownMenuItem(value: 3, child: Text('3 doses')),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) {
+                          return;
+                        }
+                        setState(() {
+                          _doseCount = value;
+                          final next = [..._times];
+                          while (next.length < value) {
+                            next.add(next.last);
+                          }
+                          _times = next;
+                        });
+                      },
+                    ),
+                  if (_medicationKind == MedicationKind.interval)
+                    DropdownButtonFormField<int>(
+                      value: _intervalDays,
+                      decoration: const InputDecoration(labelText: 'Repeat every'),
+                      items: const [
+                        DropdownMenuItem(value: 2, child: Text('Every 2 days')),
+                        DropdownMenuItem(value: 3, child: Text('Every 3 days')),
+                        DropdownMenuItem(value: 7, child: Text('Every week')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _intervalDays = value);
+                        }
+                      },
+                    ),
+                  if (_medicationKind == MedicationKind.oneTime)
+                    TextFormField(
+                      controller: _pillCountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Exact number of pills',
+                      ),
+                      validator: (value) {
+                        if (_medicationKind != MedicationKind.oneTime) {
+                          return null;
+                        }
+                        final parsed = int.tryParse((value ?? '').trim());
+                        if (parsed == null || parsed < 1) {
+                          return l10n.requiredField;
+                        }
+                        return null;
+                      },
+                    ),
+                  const SizedBox(height: 8),
+                  for (var i = 0; i < (_medicationKind == MedicationKind.daily ? _doseCount : 1); i++)
+                    Builder(
+                      builder: (context) {
+                        final doseTime = i < _times.length ? _times[i] : _times.last;
+                        return Row(
+                          children: [
+                            Text('Dose ${i + 1}: ${doseTime.format(context)}'),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () => _pickDoseTime(i),
+                              child: Text(l10n.pickTime),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  if (_medicationKind == MedicationKind.interval) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Interval alarms use the selected time and repeat every $_intervalDays days.',
+                    ),
+                  ],
+                  if (_medicationKind == MedicationKind.oneTime) ...[
+                    const SizedBox(height: 4),
+                    const Text(
+                      'One-time medication tracks each pill with check marks.',
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   ElevatedButton(
                     key: _saveButtonKey,
@@ -432,12 +584,57 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         for (final plan in _viewModel.plans)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.medication),
-              title: Text(plan.medication.name),
-              subtitle: Text(
-                '${plan.medication.dosage} • ${plan.schedule.hour.toString().padLeft(2, '0')}:${plan.schedule.minute.toString().padLeft(2, '0')} (${plan.schedule.timezoneName})',
+          Dismissible(
+            key: ValueKey('plan-${plan.schedule.id}'),
+            background: Container(
+              color: Colors.red.shade400,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            direction: DismissDirection.endToStart,
+            onDismissed: (_) => _viewModel.dismissScheduleBySwipe(plan),
+            child: Card(
+              child: ListTile(
+                leading: const Icon(Icons.medication),
+                title: Text(plan.medication.name),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${plan.medication.dosage} • ${plan.schedule.hour.toString().padLeft(2, '0')}:${plan.schedule.minute.toString().padLeft(2, '0')} (${plan.schedule.timezoneName})',
+                    ),
+                    if (plan.medication.kind == MedicationKind.interval)
+                      Text('Every ${plan.medication.intervalDays} days'),
+                    if (plan.medication.kind == MedicationKind.oneTime)
+                      Wrap(
+                        spacing: 6,
+                        children: List<Widget>.generate(plan.medication.totalPills, (
+                          index,
+                        ) {
+                          final checked = index < plan.medication.takenPills;
+                          return InkWell(
+                            onTap: checked
+                                ? null
+                                : () => _viewModel.markOneTimePillTaken(
+                                    plan.medication.id,
+                                  ),
+                            child: Icon(
+                              checked
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank,
+                              size: 20,
+                              color: checked ? Colors.green : null,
+                            ),
+                          );
+                        }),
+                      ),
+                  ],
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _editSchedule(plan),
+                ),
               ),
             ),
           ),

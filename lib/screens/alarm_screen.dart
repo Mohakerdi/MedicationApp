@@ -71,73 +71,84 @@ class _AlarmScreenState extends State<AlarmScreen> {
         builder: (context, _) => Scaffold(
           backgroundColor: Colors.red.shade900,
           body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 24),
-                  const Icon(Icons.alarm, size: 72, color: Colors.white),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.alarmScreenTitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
+            child: Dismissible(
+              key: const ValueKey('active-alarm-dismiss'),
+              direction: DismissDirection.horizontal,
+              confirmDismiss: (_) async {
+                if (_viewModel.busy) {
+                  return false;
+                }
+                await _run(widget.onSkip);
+                return false;
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 24),
+                    const Icon(Icons.alarm, size: 72, color: Colors.white),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.alarmScreenTitle,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    medication.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(height: 16),
+                    Text(
+                      medication.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    medication.dosage,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
+                    const SizedBox(height: 8),
+                    Text(
+                      medication.dosage,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: _viewModel.busy ? null : () => _run(widget.onTakeNow),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 72),
-                      backgroundColor: Colors.green.shade600,
+                    const Spacer(),
+                    ElevatedButton(
+                      onPressed: _viewModel.busy ? null : () => _run(widget.onTakeNow),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 72),
+                        backgroundColor: Colors.green.shade600,
+                      ),
+                      child: Text(l10n.takeNow, style: const TextStyle(fontSize: 24)),
                     ),
-                    child: Text(l10n.takeNow, style: const TextStyle(fontSize: 24)),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _viewModel.busy ? null : () => _run(widget.onSnooze),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 72),
-                      backgroundColor: Colors.orange.shade700,
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _viewModel.busy ? null : () => _run(widget.onSnooze),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 72),
+                        backgroundColor: Colors.orange.shade700,
+                      ),
+                      child: Text(l10n.snoozeTen, style: const TextStyle(fontSize: 24)),
                     ),
-                    child: Text(l10n.snoozeTen, style: const TextStyle(fontSize: 24)),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton(
-                    onPressed: _viewModel.busy ? null : () => _run(widget.onSkip),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 72),
-                      side: const BorderSide(color: Colors.white70, width: 2),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: _viewModel.busy ? null : () => _run(widget.onSkip),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 72),
+                        side: const BorderSide(color: Colors.white70, width: 2),
+                      ),
+                      child: Text(
+                        l10n.skip,
+                        style: const TextStyle(fontSize: 24, color: Colors.white),
+                      ),
                     ),
-                    child: Text(
-                      l10n.skip,
-                      style: const TextStyle(fontSize: 24, color: Colors.white),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

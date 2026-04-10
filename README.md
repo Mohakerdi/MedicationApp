@@ -15,6 +15,11 @@ This app is an offline-first medication reminder designed for reliability.
   - **Take now**
   - **Snooze 10 min**
   - **Skip**
+  - **Swipe to dismiss (skip)**
+- Flexible schedule types:
+  - daily medication with up to 3 doses per day
+  - interval medication (every 2 days, 3 days, or weekly)
+  - one-time medication with per-pill checklist tracking
 - Startup reconciliation:
   - marks stale pending alarms as missed
   - re-seeds/schedules missing alarms after reboot or process death

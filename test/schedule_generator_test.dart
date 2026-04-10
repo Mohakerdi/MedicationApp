@@ -46,4 +46,23 @@ void main() {
       expect(item.minute, 0);
     }
   });
+
+  test('generates interval occurrences every 3 days', () {
+    final location = tz.getLocation('UTC');
+    final fromUtc = DateTime.utc(2025, 1, 1, 7, 0);
+
+    final items = ScheduleGenerator.generateOccurrences(
+      location: location,
+      hour: 8,
+      minute: 0,
+      fromUtc: fromUtc,
+      occurrences: 3,
+      everyDays: 3,
+    );
+
+    expect(items.length, 3);
+    expect(items[0].day, 1);
+    expect(items[1].day, 4);
+    expect(items[2].day, 7);
+  });
 }

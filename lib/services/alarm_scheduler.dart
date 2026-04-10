@@ -19,13 +19,28 @@ class AlarmScheduler {
   final int scheduleHorizonDays;
 
   Future<void> seedForPlan(MedicationPlan plan, {DateTime? fromUtc}) async {
+    if (plan.medication.kind == MedicationKind.oneTime) {
+      final exists = await database.hasAnyAlarmForSchedule(plan.schedule.id);
+      if (exists) {
+        return;
+      }
+    }
+
     final location = _safeLocation(plan.schedule.timezoneName);
-    final occurrences = ScheduleGenerator.generateDailyOccurrences(
+    final intervalDays = plan.medication.kind == MedicationKind.interval
+        ? plan.medication.intervalDays
+        : 1;
+    final occurrenceCount = plan.medication.kind == MedicationKind.oneTime
+        ? 1
+        : (scheduleHorizonDays / intervalDays).ceil();
+
+    final occurrences = ScheduleGenerator.generateOccurrences(
       location: location,
       hour: plan.schedule.hour,
       minute: plan.schedule.minute,
       fromUtc: fromUtc ?? DateTime.now().toUtc(),
-      days: scheduleHorizonDays,
+      occurrences: occurrenceCount,
+      everyDays: intervalDays,
     );
 
     for (final occurrence in occurrences) {

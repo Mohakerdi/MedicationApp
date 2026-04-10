@@ -48,18 +48,24 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> addMedication({
     required String name,
     required String dosage,
-    required int hour,
-    required int minute,
+    required List<({int hour, int minute})> times,
+    required MedicationKind kind,
+    required int intervalDays,
+    required int totalPills,
   }) async {
     final timezoneName = tz.local.name;
-    final plan = await database.createMedicationPlan(
+    final plans = await database.createMedicationPlans(
       name: name.trim(),
       dosage: dosage.trim(),
-      hour: hour,
-      minute: minute,
+      times: times,
       timezoneName: timezoneName,
+      kind: kind,
+      intervalDays: intervalDays,
+      totalPills: totalPills,
     );
-    await scheduler.seedForPlan(plan);
+    for (final plan in plans) {
+      await scheduler.seedForPlan(plan);
+    }
     await load();
   }
 
@@ -104,6 +110,53 @@ class HomeViewModel extends ChangeNotifier {
     }
     await load();
     return imported;
+  }
+
+  Future<void> dismissScheduleBySwipe(MedicationPlan plan) async {
+    final alarmIds = await database.getPendingAlarmIdsForSchedule(plan.schedule.id);
+    for (final id in alarmIds) {
+      await notifications.cancelAlarm(id);
+    }
+    await database.dismissPendingAlarmsForSchedule(
+      scheduleId: plan.schedule.id,
+      action: 'dismissed_by_swipe',
+    );
+    await database.deleteDoseSchedule(plan.schedule.id);
+    await load();
+  }
+
+  Future<void> editScheduleTime({
+    required MedicationPlan plan,
+    required int hour,
+    required int minute,
+  }) async {
+    final alarmIds = await database.getPendingAlarmIdsForSchedule(plan.schedule.id);
+    for (final id in alarmIds) {
+      await notifications.cancelAlarm(id);
+    }
+    await database.dismissPendingAlarmsForSchedule(
+      scheduleId: plan.schedule.id,
+      action: 'dismissed_by_edit',
+    );
+    await database.updateDoseScheduleTime(
+      scheduleId: plan.schedule.id,
+      hour: hour,
+      minute: minute,
+    );
+    final refreshedPlans = await database.getMedicationPlansByMedicationId(
+      plan.medication.id,
+    );
+    final edited = refreshedPlans.firstWhere(
+      (item) => item.schedule.id == plan.schedule.id,
+      orElse: () => plan,
+    );
+    await scheduler.seedForPlan(edited);
+    await load();
+  }
+
+  Future<void> markOneTimePillTaken(int medicationId) async {
+    await database.incrementMedicationTakenPills(medicationId);
+    await load();
   }
 
   Future<void> deleteAllData() async {

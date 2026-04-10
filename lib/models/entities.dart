@@ -3,6 +3,10 @@ class Medication {
     required this.id,
     required this.name,
     required this.dosage,
+    required this.kind,
+    required this.intervalDays,
+    required this.totalPills,
+    required this.takenPills,
     required this.isActive,
     required this.createdAt,
   });
@@ -10,6 +14,10 @@ class Medication {
   final int id;
   final String name;
   final String dosage;
+  final MedicationKind kind;
+  final int intervalDays;
+  final int totalPills;
+  final int takenPills;
   final bool isActive;
   final DateTime createdAt;
 
@@ -18,8 +26,27 @@ class Medication {
       id: map['id'] as int,
       name: map['name'] as String,
       dosage: map['dosage'] as String,
+      kind: MedicationKindValue.fromValue(
+        (map['kind'] as String?) ?? MedicationKind.daily.value,
+      ),
+      intervalDays: (map['interval_days'] as int?) ?? 1,
+      totalPills: (map['total_pills'] as int?) ?? 0,
+      takenPills: (map['taken_pills'] as int?) ?? 0,
       isActive: (map['is_active'] as int) == 1,
       createdAt: DateTime.parse(map['created_at'] as String),
+    );
+  }
+}
+
+enum MedicationKind { daily, interval, oneTime }
+
+extension MedicationKindValue on MedicationKind {
+  String get value => name;
+
+  static MedicationKind fromValue(String value) {
+    return MedicationKind.values.firstWhere(
+      (kind) => kind.name == value,
+      orElse: () => MedicationKind.daily,
     );
   }
 }
