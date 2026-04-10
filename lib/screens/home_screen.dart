@@ -90,6 +90,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showTutorialIfNeeded() async {
+    final supportsTutorialOverlay =
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+    if (!supportsTutorialOverlay) {
+      return;
+    }
     if (!mounted || _tutorialPresented || !widget.settingsViewModel.shouldShowHomeTutorial) {
       return;
     }

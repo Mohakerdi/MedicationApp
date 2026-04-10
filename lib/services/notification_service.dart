@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -18,6 +19,9 @@ class NotificationService {
   Stream<int> get alarmSelectionStream => _alarmSelectionController.stream;
 
   Future<int?> initialize() async {
+    if (!_supportsNotificationScheduling) {
+      return null;
+    }
     tz_data.initializeTimeZones();
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -74,6 +78,9 @@ class NotificationService {
   }
 
   Future<void> requestUserPermissions() async {
+    if (!_supportsNotificationScheduling) {
+      return;
+    }
     try {
       final androidPlatform =
           _plugin.resolvePlatformSpecificImplementation<
@@ -96,6 +103,9 @@ class NotificationService {
   }
 
   Future<bool> canScheduleExactAlarms() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return true;
+    }
     try {
       final androidPlatform =
           _plugin.resolvePlatformSpecificImplementation<
@@ -116,6 +126,9 @@ class NotificationService {
     required String body,
     required tz.TZDateTime when,
   }) async {
+    if (!_supportsNotificationScheduling) {
+      return;
+    }
     const androidDetails = AndroidNotificationDetails(
       'medication_alarm_channel',
       'Medication alarms',
@@ -154,18 +167,27 @@ class NotificationService {
   }
 
   Future<void> cancelAlarm(int alarmId) async {
+    if (!_supportsNotificationScheduling) {
+      return;
+    }
     try {
       await _plugin.cancel(alarmId);
     } catch (_) {}
   }
 
   Future<void> cancelAll() async {
+    if (!_supportsNotificationScheduling) {
+      return;
+    }
     try {
       await _plugin.cancelAll();
     } catch (_) {}
   }
 
   Future<Set<int>> getPendingNotificationIds() async {
+    if (!_supportsNotificationScheduling) {
+      return {};
+    }
     try {
       final pending = await _plugin.pendingNotificationRequests();
       return pending.map((item) => item.id).toSet();
@@ -186,6 +208,16 @@ class NotificationService {
       return null;
     }
     return int.tryParse(payload.split(':').last);
+  }
+
+  bool get _supportsNotificationScheduling {
+    if (kIsWeb) {
+      return false;
+    }
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.linux;
   }
 }
 
