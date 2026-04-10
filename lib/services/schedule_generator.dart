@@ -32,11 +32,12 @@ class ScheduleGenerator {
 
     final dates = <tz.TZDateTime>[];
     for (var i = 0; i < days; i++) {
+      final day = cursor.add(Duration(days: i));
       final next = tz.TZDateTime(
         location,
-        cursor.year,
-        cursor.month,
-        cursor.day + i,
+        day.year,
+        day.month,
+        day.day,
         hour,
         minute,
       );
