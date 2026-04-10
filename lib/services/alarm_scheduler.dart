@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:timezone/timezone.dart' as tz;
 
 import '../data/app_database.dart';
@@ -44,7 +46,10 @@ class AlarmScheduler {
 
       await notifications.scheduleAlarm(
         alarmId: alarmId,
-        title: 'Medication time',
+        title: _text(
+          english: 'Medication time',
+          arabic: 'موعد الدواء',
+        ),
         body: '${plan.medication.name} • ${plan.medication.dosage}',
         when: occurrence,
       );
@@ -78,7 +83,10 @@ class AlarmScheduler {
       }
       await notifications.scheduleAlarm(
         alarmId: alarm.id,
-        title: 'Medication time',
+        title: _text(
+          english: 'Medication time',
+          arabic: 'موعد الدواء',
+        ),
         body: '${full.medication.name} • ${full.medication.dosage}',
         when: tz.TZDateTime.from(alarm.triggerAt.toLocal(), tz.local),
       );
@@ -136,10 +144,20 @@ class AlarmScheduler {
 
     await notifications.scheduleAlarm(
       alarmId: newAlarmId,
-      title: 'Snoozed medication alarm',
+      title: _text(
+        english: 'Snoozed medication alarm',
+        arabic: 'منبه دواء مؤجل',
+      ),
       body: '${full.medication.name} • ${full.medication.dosage}',
       when: tz.TZDateTime.from(triggerUtc.toLocal(), tz.local),
     );
+  }
+
+  String _text({required String english, required String arabic}) {
+    // Notification scheduling runs outside widget context, so we use
+    // platform locale directly instead of AppLocalizations here.
+    final languageCode = ui.PlatformDispatcher.instance.locale.languageCode;
+    return languageCode == 'ar' ? arabic : english;
   }
 
   tz.Location _safeLocation(String timezoneName) {

@@ -1,0 +1,85 @@
+{
+  "@@locale": "ar",
+  "appTitle": "منبه الدواء",
+  "exactAlarmsEnabled": "تم تفعيل المنبهات الدقيقة",
+  "exactAlarmsDisabled": "المنبهات الدقيقة غير مفعلة",
+  "grantAlarmPermissions": "منح صلاحيات المنبه",
+  "exactAlarmSettings": "إعدادات المنبهات الدقيقة",
+  "batteryOptimization": "تحسين البطارية",
+  "addMedicationSchedule": "إضافة جدول دواء",
+  "medicationName": "اسم الدواء",
+  "dosageHint": "الجرعة (مثال: 2mg)",
+  "requiredField": "مطلوب",
+  "timeLabel": "الوقت: {time}",
+  "@timeLabel": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "pickTime": "اختيار الوقت",
+  "saveSchedule": "حفظ الجدول",
+  "activeSchedules": "الجداول النشطة",
+  "noMedicationsYet": "لا توجد أدوية بعد.",
+  "exportCsv": "تصدير CSV",
+  "importCsv": "استيراد CSV",
+  "exportUnsupported": "تصدير CSV غير مدعوم على الويب حالياً",
+  "csvExportedAt": "تم تصدير CSV إلى: {path}",
+  "@csvExportedAt": {
+    "placeholders": {
+      "path": {}
+    }
+  },
+  "csvImportDone": "تم استيراد {count} جدول",
+  "@csvImportDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "csvImportInvalid": "ملف CSV غير صالح",
+  "csvImportCancelled": "تم إلغاء الاستيراد",
+  "landingTitle": "التزم بأدويتك بسهولة",
+  "landingSubtitle": "أنشئ تذكيرات موثوقة، وأجّل عند الحاجة، ولا تفوّت أي جرعة.",
+  "getStarted": "ابدأ الآن",
+  "splashTitle": "منبه الدواء",
+  "takeNow": "تناول الآن",
+  "snoozeTen": "غفوة 10 دقائق",
+  "skip": "تخطي",
+  "medicationTime": "موعد الدواء",
+  "snoozedMedicationAlarm": "منبه دواء مؤجل",
+  "alarmScreenTitle": "منبه الدواء",
+  "csvHeaderMedicationName": "medication_name",
+  "csvHeaderDosage": "dosage",
+  "csvHeaderHour": "hour",
+  "csvHeaderMinute": "minute",
+  "csvHeaderTimezone": "timezone_name",
+  "homeTab": "الرئيسية",
+  "optionsTab": "الخيارات",
+  "themeMode": "وضع المظهر",
+  "themeSystem": "النظام",
+  "themeLight": "فاتح",
+  "themeDark": "داكن",
+  "language": "اللغة",
+  "languageSystem": "افتراضي النظام",
+  "languageEnglish": "الإنجليزية",
+  "languageArabic": "العربية",
+  "alarmSound": "نغمة المنبه",
+  "currentSound": "النغمة الحالية",
+  "chooseSoundFromDevice": "اختيار نغمة من الجهاز",
+  "deleteAll": "حذف الكل",
+  "delete": "حذف",
+  "cancel": "إلغاء",
+  "ok": "موافق",
+  "deleteAllConfirm": "حذف كل الجداول وسجل التنبيهات؟",
+  "deleteAllDone": "تم حذف جميع البيانات",
+  "aboutUs": "من نحن",
+  "aboutUsBody": "منبه الدواء يساعدك على إدارة الجداول والتنبيهات دون اتصال.",
+  "help": "مساعدة",
+  "helpBody": "أضف الجداول من الرئيسية وأدر التفضيلات من الخيارات.",
+  "support": "الدعم",
+  "supportBody": "للدعم، تواصل مع مسؤول التطبيق.",
+  "tutorialAddMedication": "أضف أدويتك وحدد الأوقات من هنا.",
+  "tutorialSaveSchedule": "اضغط حفظ لبدء جدولة التذكيرات.",
+  "tutorialOptionsTab": "افتح الخيارات للمظهر واللغة والنغمات والأدوات."
+}
