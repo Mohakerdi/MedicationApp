@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'app.dart';
@@ -15,6 +17,13 @@ Future<void> main() async {
   } catch (_) {
     initialAlarmId = null;
   }
+  unawaited(
+    notifications.requestUserPermissions().catchError((error, _) {
+      debugPrint(
+        'Request notification/alarm permissions failed: ${error.toString()}',
+      );
+    }),
+  );
   final database = AppDatabase.instance;
   final scheduler = AlarmScheduler(database: database, notifications: notifications);
 

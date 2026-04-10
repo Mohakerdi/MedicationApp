@@ -16,6 +16,8 @@ import '../services/notification_service.dart';
 import '../viewmodels/app_settings_view_model.dart';
 import '../viewmodels/home_view_model.dart';
 import 'alarm_screen.dart';
+import 'widgets/home_cards.dart';
+import 'widgets/options_cards.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -40,6 +42,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _defaultHour = 8;
   static const _defaultMinute = 0;
+  static const _recentlyOpenedAlarmCacheLimit = 50;
 
   late final HomeViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
@@ -56,8 +59,15 @@ class _HomeScreenState extends State<HomeScreen> {
   MedicationKind _medicationKind = MedicationKind.daily;
   int _intervalDays = 2;
   StreamSubscription<int>? _selectionSubscription;
+  Timer? _dueAlarmTimer;
+  bool _openingAlarmScreen = false;
+  bool _dueAlarmCheckInFlight = false;
+  final List<int> _recentlyOpenedAlarmIds = <int>[];
   int _tabIndex = 0;
   bool _tutorialPresented = false;
+  bool _tutorialVisible = false;
+
+  int get _activeDoseCount => _medicationKind == MedicationKind.daily ? _doseCount : 1;
 
   @override
   void initState() {
@@ -77,12 +87,18 @@ class _HomeScreenState extends State<HomeScreen> {
         _openAlarmById(widget.initialAlarmId!);
       });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndOpenDueAlarm());
+    _dueAlarmTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _checkAndOpenDueAlarm(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _showTutorialIfNeeded());
   }
 
   @override
   void dispose() {
     _selectionSubscription?.cancel();
+    _dueAlarmTimer?.cancel();
     _nameController.dispose();
     _dosageController.dispose();
     _pillCountController.dispose();
@@ -101,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     _tutorialPresented = true;
+    _tutorialVisible = true;
     final l10n = AppLocalizations.of(context)!;
     final targets = [
       TargetFocus(
@@ -148,8 +165,12 @@ class _HomeScreenState extends State<HomeScreen> {
       targets: targets,
       hideSkip: false,
       textSkip: l10n.skip,
-      onFinish: () => widget.settingsViewModel.markHomeTutorialSeen(),
+      onFinish: () {
+        _tutorialVisible = false;
+        widget.settingsViewModel.markHomeTutorialSeen();
+      },
       onSkip: () {
+        _tutorialVisible = false;
         widget.settingsViewModel.markHomeTutorialSeen();
         return true;
       },
@@ -172,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
       name: _nameController.text,
       dosage: _dosageController.text,
       times: _times
-          .take(_medicationKind == MedicationKind.daily ? _doseCount : 1)
+          .take(_activeDoseCount)
           .map((time) => (hour: time.hour, minute: time.minute))
           .toList(),
       kind: _medicationKind,
@@ -241,21 +262,54 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || alarm == null) {
       return;
     }
+    await _openAlarm(alarm);
+  }
 
+  Future<void> _openAlarm(AlarmWithMedication alarm) async {
+    if (!mounted) {
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
         builder: (_) => AlarmScreen(
           alarm: alarm,
           alarmSound: widget.settingsViewModel.selectedSound,
-          onTakeNow: () => widget.scheduler.markTaken(alarmId),
-          onSnooze: () => widget.scheduler.snooze(alarmId: alarmId),
-          onSkip: () => widget.scheduler.markSkipped(alarmId),
+          onTakeNow: () => widget.scheduler.markTaken(alarm.alarm.id),
+          onSnooze: () => widget.scheduler.snooze(alarmId: alarm.alarm.id),
+          onSkip: () => widget.scheduler.markSkipped(alarm.alarm.id),
         ),
       ),
     );
-
     await _viewModel.load();
+  }
+
+  Future<void> _checkAndOpenDueAlarm() async {
+    if (!mounted || _openingAlarmScreen || _tutorialVisible || _dueAlarmCheckInFlight) {
+      return;
+    }
+    try {
+      _dueAlarmCheckInFlight = true;
+      final dueAlarm = await _viewModel.getDueAlarmForImmediateDisplay();
+      if (!mounted || dueAlarm == null) {
+        return;
+      }
+      final alarmId = dueAlarm.alarm.id;
+      if (_recentlyOpenedAlarmIds.contains(alarmId)) {
+        return;
+      }
+
+      _openingAlarmScreen = true;
+      _recentlyOpenedAlarmIds.add(alarmId);
+      await _openAlarm(dueAlarm);
+    } finally {
+      _dueAlarmCheckInFlight = false;
+      _openingAlarmScreen = false;
+      final overflow = _recentlyOpenedAlarmIds.length - _recentlyOpenedAlarmCacheLimit;
+      if (overflow > 0) {
+        _recentlyOpenedAlarmIds.removeRange(0, overflow);
+      }
+    }
   }
 
   Future<void> _requestAlarmPermissions() async {
@@ -386,198 +440,190 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSchedulesTab(AppLocalizations l10n) {
+    final numberOfDoses = _activeDoseCount;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Card(
-          color: _viewModel.exactAlarmGranted
-              ? Colors.green.shade50
-              : Colors.red.shade50,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _viewModel.exactAlarmGranted
-                      ? l10n.exactAlarmsEnabled
-                      : l10n.exactAlarmsDisabled,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _requestAlarmPermissions,
-                      child: Text(l10n.grantAlarmPermissions),
+        ModernSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _viewModel.exactAlarmGranted
+                    ? l10n.exactAlarmsEnabled
+                    : l10n.exactAlarmsDisabled,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton(
+                    onPressed: _requestAlarmPermissions,
+                    child: Text(l10n.grantAlarmPermissions),
+                  ),
+                  if (defaultTargetPlatform == TargetPlatform.android)
+                    OutlinedButton(
+                      onPressed: _openExactAlarmSettings,
+                      child: Text(l10n.exactAlarmSettings),
                     ),
-                    if (defaultTargetPlatform == TargetPlatform.android)
-                      OutlinedButton(
-                        onPressed: _openExactAlarmSettings,
-                        child: Text(l10n.exactAlarmSettings),
-                      ),
-                    if (defaultTargetPlatform == TargetPlatform.android)
-                      OutlinedButton(
-                        onPressed: _openBatteryOptimizationSettings,
-                        child: Text(l10n.batteryOptimization),
-                      ),
-                  ],
-                ),
-              ],
-            ),
+                  if (defaultTargetPlatform == TargetPlatform.android)
+                    OutlinedButton(
+                      onPressed: _openBatteryOptimizationSettings,
+                      child: Text(l10n.batteryOptimization),
+                    ),
+                ],
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 12),
         Form(
           key: _formKey,
-          child: Card(
+          child: ModernSectionCard(
             key: _addCardKey,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.addMedicationSchedule,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(labelText: l10n.medicationName),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.requiredField;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _dosageController,
-                    decoration: InputDecoration(labelText: l10n.dosageHint),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.requiredField;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<MedicationKind>(
-                    value: _medicationKind,
-                    decoration: const InputDecoration(labelText: 'Medication type'),
-                    items: MedicationKind.values
-                        .map(
-                          (kind) => DropdownMenuItem<MedicationKind>(
-                            value: kind,
-                            child: Text(_kindLabel(kind)),
-                          ),
-                        )
-                        .toList(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.addMedicationSchedule,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(labelText: l10n.medicationName),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return l10n.requiredField;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _dosageController,
+                  decoration: InputDecoration(labelText: l10n.dosageHint),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return l10n.requiredField;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<MedicationKind>(
+                  value: _medicationKind,
+                  decoration: const InputDecoration(labelText: 'Medication type'),
+                  items: MedicationKind.values
+                      .map(
+                        (kind) => DropdownMenuItem<MedicationKind>(
+                          value: kind,
+                          child: Text(_kindLabel(kind)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() => _medicationKind = value);
+                  },
+                ),
+                const SizedBox(height: 8),
+                if (_medicationKind == MedicationKind.daily)
+                  DropdownButtonFormField<int>(
+                    value: _doseCount,
+                    decoration: const InputDecoration(labelText: 'Doses per day'),
+                    items: const [
+                      DropdownMenuItem(value: 1, child: Text('1 dose')),
+                      DropdownMenuItem(value: 2, child: Text('2 doses')),
+                      DropdownMenuItem(value: 3, child: Text('3 doses')),
+                    ],
                     onChanged: (value) {
                       if (value == null) {
                         return;
                       }
-                      setState(() => _medicationKind = value);
+                      setState(() {
+                        _doseCount = value;
+                        final next = [..._times];
+                        while (next.length < value) {
+                          next.add(next.last);
+                        }
+                        _times = next;
+                      });
                     },
                   ),
-                  const SizedBox(height: 8),
-                  if (_medicationKind == MedicationKind.daily)
-                    DropdownButtonFormField<int>(
-                      value: _doseCount,
-                      decoration: const InputDecoration(labelText: 'Doses per day'),
-                      items: const [
-                        DropdownMenuItem(value: 1, child: Text('1 dose')),
-                        DropdownMenuItem(value: 2, child: Text('2 doses')),
-                        DropdownMenuItem(value: 3, child: Text('3 doses')),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) {
-                          return;
-                        }
-                        setState(() {
-                          _doseCount = value;
-                          final next = [..._times];
-                          while (next.length < value) {
-                            next.add(next.last);
-                          }
-                          _times = next;
-                        });
-                      },
+                if (_medicationKind == MedicationKind.interval)
+                  DropdownButtonFormField<int>(
+                    value: _intervalDays,
+                    decoration: const InputDecoration(labelText: 'Repeat every'),
+                    items: const [
+                      DropdownMenuItem(value: 2, child: Text('Every 2 days')),
+                      DropdownMenuItem(value: 3, child: Text('Every 3 days')),
+                      DropdownMenuItem(value: 7, child: Text('Every week')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _intervalDays = value);
+                      }
+                    },
+                  ),
+                if (_medicationKind == MedicationKind.oneTime)
+                  TextFormField(
+                    controller: _pillCountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Exact number of pills',
                     ),
-                  if (_medicationKind == MedicationKind.interval)
-                    DropdownButtonFormField<int>(
-                      value: _intervalDays,
-                      decoration: const InputDecoration(labelText: 'Repeat every'),
-                      items: const [
-                        DropdownMenuItem(value: 2, child: Text('Every 2 days')),
-                        DropdownMenuItem(value: 3, child: Text('Every 3 days')),
-                        DropdownMenuItem(value: 7, child: Text('Every week')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _intervalDays = value);
-                        }
-                      },
-                    ),
-                  if (_medicationKind == MedicationKind.oneTime)
-                    TextFormField(
-                      controller: _pillCountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Exact number of pills',
-                      ),
-                      validator: (value) {
-                        if (_medicationKind != MedicationKind.oneTime) {
-                          return null;
-                        }
-                        final parsed = int.tryParse((value ?? '').trim());
-                        if (parsed == null || parsed < 1) {
-                          return l10n.requiredField;
-                        }
+                    validator: (value) {
+                      if (_medicationKind != MedicationKind.oneTime) {
                         return null;
-                      },
-                    ),
-                  const SizedBox(height: 8),
-                  for (var i = 0; i < (_medicationKind == MedicationKind.daily ? _doseCount : 1); i++)
-                    Builder(
-                      builder: (context) {
-                        final doseTime = i < _times.length ? _times[i] : _times.last;
-                        return Row(
-                          children: [
-                            Text('Dose ${i + 1}: ${doseTime.format(context)}'),
-                            const Spacer(),
-                            TextButton(
-                              onPressed: () => _pickDoseTime(i),
-                              child: Text(l10n.pickTime),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  if (_medicationKind == MedicationKind.interval) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Interval alarms use the selected time and repeat every $_intervalDays days.',
-                    ),
-                  ],
-                  if (_medicationKind == MedicationKind.oneTime) ...[
-                    const SizedBox(height: 4),
-                    const Text(
-                      'One-time medication tracks each pill with check marks.',
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    key: _saveButtonKey,
-                    onPressed: _addMedication,
-                    child: Text(l10n.saveSchedule),
+                      }
+                      final parsed = int.tryParse((value ?? '').trim());
+                      if (parsed == null || parsed < 1) {
+                        return l10n.requiredField;
+                      }
+                      return null;
+                    },
+                  ),
+                const SizedBox(height: 8),
+                for (var i = 0; i < numberOfDoses; i++)
+                  Builder(
+                    builder: (context) {
+                      final doseTime = i < _times.length ? _times[i] : _times.last;
+                      return Row(
+                        children: [
+                          Text('Dose ${i + 1}: ${doseTime.format(context)}'),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () => _pickDoseTime(i),
+                            child: Text(l10n.pickTime),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                if (_medicationKind == MedicationKind.interval) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Interval alarms use the selected time and repeat every $_intervalDays days.',
                   ),
                 ],
-              ),
+                if (_medicationKind == MedicationKind.oneTime) ...[
+                  const SizedBox(height: 4),
+                  const Text(
+                    'One-time medication tracks each pill with check marks.',
+                  ),
+                ],
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  key: _saveButtonKey,
+                  onPressed: _addMedication,
+                  child: Text(l10n.saveSchedule),
+                ),
+              ],
             ),
           ),
         ),
@@ -588,12 +634,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 8),
         if (_viewModel.plans.isEmpty)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(l10n.noMedicationsYet),
-            ),
-          ),
+          ModernSectionCard(child: Text(l10n.noMedicationsYet)),
         for (final plan in _viewModel.plans)
           Dismissible(
             key: ValueKey('plan-${plan.schedule.id}'),
@@ -605,48 +646,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             direction: DismissDirection.endToStart,
             onDismissed: (_) => _viewModel.dismissScheduleBySwipe(plan),
-            child: Card(
-              child: ListTile(
-                leading: const Icon(Icons.medication),
-                title: Text(plan.medication.name),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${plan.medication.dosage} • ${plan.schedule.hour.toString().padLeft(2, '0')}:${plan.schedule.minute.toString().padLeft(2, '0')} (${plan.schedule.timezoneName})',
-                    ),
-                    if (plan.medication.kind == MedicationKind.interval)
-                      Text('Every ${plan.medication.intervalDays} days'),
-                    if (plan.medication.kind == MedicationKind.oneTime)
-                      Wrap(
-                        spacing: 6,
-                        children: List<Widget>.generate(plan.medication.totalPills, (
-                          index,
-                        ) {
-                          final checked = index < plan.medication.takenPills;
-                          return InkWell(
-                            onTap: checked
-                                ? null
-                                : () => _viewModel.markOneTimePillTaken(
-                                    plan.medication.id,
-                                  ),
-                            child: Icon(
-                              checked
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank,
-                              size: 20,
-                              color: checked ? Colors.green : null,
-                            ),
-                          );
-                        }),
-                      ),
-                  ],
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _editSchedule(plan),
-                ),
-              ),
+            child: MedicationPlanCard(
+              plan: plan,
+              onEdit: () => _editSchedule(plan),
+              onMarkOneTimePillTaken: () =>
+                  _viewModel.markOneTimePillTaken(plan.medication.id),
             ),
           ),
       ],
@@ -665,9 +669,45 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         Card(
-          child: ListTile(
-            title: Text(l10n.themeMode),
-            subtitle: DropdownButton<ThemeMode>(
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primaryContainer,
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  child: const Icon(Icons.tune),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    l10n.optionsTab,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        OptionsGroupCard(
+          icon: Icons.palette_outlined,
+          title: l10n.themeMode,
+          children: [
+            DropdownButton<ThemeMode>(
               value: widget.settingsViewModel.themeMode,
               isExpanded: true,
               onChanged: (value) {
@@ -690,12 +730,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-          ),
+          ],
         ),
-        Card(
-          child: ListTile(
-            title: Text(l10n.language),
-            subtitle: DropdownButton<String?>(
+        const SizedBox(height: 12),
+        OptionsGroupCard(
+          icon: Icons.language_outlined,
+          title: l10n.language,
+          children: [
+            DropdownButton<String?>(
               value: selectedLocaleCode,
               isExpanded: true,
               onChanged: (value) => widget.settingsViewModel.setLocaleCode(value),
@@ -714,98 +756,96 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-          ),
+          ],
         ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.alarmSound,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                DropdownButton<String>(
-                  value: selectedSound.id,
-                  isExpanded: true,
-                  onChanged: (value) {
-                    if (value != null) {
-                      widget.settingsViewModel.setSelectedAssetSound(value);
-                    }
-                  },
-                  items: soundItems
-                      .map(
-                        (sound) => DropdownMenuItem<String>(
-                          value: sound.id,
-                          child: Text(sound.label),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 8),
-                Text('${l10n.currentSound}: ${selectedSound.label}'),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _pickDeviceSound,
-                  icon: const Icon(Icons.library_music),
-                  label: Text(l10n.chooseSoundFromDevice),
-                ),
-              ],
+        const SizedBox(height: 12),
+        OptionsGroupCard(
+          icon: Icons.music_note_outlined,
+          title: l10n.alarmSound,
+          children: [
+            DropdownButton<String>(
+              value: selectedSound.id,
+              isExpanded: true,
+              onChanged: (value) {
+                if (value != null) {
+                  widget.settingsViewModel.setSelectedAssetSound(value);
+                }
+              },
+              items: soundItems
+                  .map(
+                    (sound) => DropdownMenuItem<String>(
+                      value: sound.id,
+                      child: Text(sound.label),
+                    ),
+                  )
+                  .toList(),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text('${l10n.currentSound}: ${selectedSound.label}'),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _pickDeviceSound,
+              icon: const Icon(Icons.library_music),
+              label: Text(l10n.chooseSoundFromDevice),
+            ),
+          ],
         ),
-        Card(
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.upload_file),
-                title: Text(l10n.exportCsv),
-                onTap: _exportCsv,
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.download_for_offline_outlined),
-                title: Text(l10n.importCsv),
-                onTap: _importCsv,
-              ),
-            ],
-          ),
+        const SizedBox(height: 12),
+        OptionsGroupCard(
+          icon: Icons.import_export,
+          title: '${l10n.exportCsv} / ${l10n.importCsv}',
+          children: [
+            OptionsActionTile(
+              icon: Icons.upload_file,
+              title: l10n.exportCsv,
+              onTap: _exportCsv,
+            ),
+            const Divider(height: 16),
+            OptionsActionTile(
+              icon: Icons.download_for_offline_outlined,
+              title: l10n.importCsv,
+              onTap: _importCsv,
+            ),
+          ],
         ),
-        Card(
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.delete_forever),
-                title: Text(l10n.deleteAll),
-                onTap: _confirmDeleteAll,
+        const SizedBox(height: 12),
+        OptionsGroupCard(
+          icon: Icons.settings_outlined,
+          title: l10n.appTitle,
+          children: [
+            OptionsActionTile(
+              icon: Icons.delete_forever,
+              title: l10n.deleteAll,
+              subtitle: l10n.deleteAllConfirm,
+              onTap: _confirmDeleteAll,
+            ),
+            const Divider(height: 16),
+            OptionsActionTile(
+              icon: Icons.info_outline,
+              title: l10n.aboutUs,
+              subtitle: l10n.aboutUsBody,
+              onTap: () => showAboutDialog(
+                context: context,
+                applicationName: l10n.appTitle,
+                applicationVersion: '1.0.0',
+                children: [Text(l10n.aboutUsBody)],
               ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: Text(l10n.aboutUs),
-                onTap: () => showAboutDialog(
-                  context: context,
-                  applicationName: l10n.appTitle,
-                  applicationVersion: '1.0.0',
-                  children: [Text(l10n.aboutUsBody)],
-                ),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.help_outline),
-                title: Text(l10n.help),
-                onTap: () => _showInfoDialog(l10n.help, l10n.helpBody),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.support_agent),
-                title: Text(l10n.support),
-                onTap: () => _showInfoDialog(l10n.support, l10n.supportBody),
-              ),
-            ],
-          ),
+            ),
+            const Divider(height: 16),
+            OptionsActionTile(
+              icon: Icons.help_outline,
+              title: l10n.help,
+              subtitle: l10n.helpBody,
+              onTap: () => _showInfoDialog(l10n.help, l10n.helpBody),
+            ),
+            const Divider(height: 16),
+            OptionsActionTile(
+              icon: Icons.support_agent,
+              title: l10n.support,
+              subtitle: l10n.supportBody,
+              onTap: () => _showInfoDialog(l10n.support, l10n.supportBody),
+            ),
+          ],
         ),
       ],
     );
