@@ -1,6 +1,6 @@
 {
-    "name": "medecation_app",
-    "short_name": "medecation_app",
+    "name": "Mordy",
+    "short_name": "Mordy",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

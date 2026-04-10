@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Medication Alarm';
+  String get appTitle => 'Mordy';
 
   @override
   String get exactAlarmsEnabled => 'Exact alarms enabled';
@@ -91,7 +91,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get getStarted => 'Get Started';
 
   @override
-  String get splashTitle => 'Medication Alarm';
+  String get splashTitle => 'Mordy';
 
   @override
   String get takeNow => 'TAKE NOW';
@@ -109,7 +109,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get snoozedMedicationAlarm => 'Snoozed medication alarm';
 
   @override
-  String get alarmScreenTitle => 'Medication Alarm';
+  String get alarmScreenTitle => 'Mordy';
 
   @override
   String get csvHeaderMedicationName => 'medication_name';
@@ -188,7 +188,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutUsBody =>
-      'Medication Alarm helps you manage schedules and reminders offline.';
+      'Mordy helps you manage schedules and reminders offline.';
 
   @override
   String get help => 'Help';

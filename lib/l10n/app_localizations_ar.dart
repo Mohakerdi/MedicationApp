@@ -9,7 +9,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appTitle => 'منبه الدواء';
+  String get appTitle => 'Mordy';
 
   @override
   String get exactAlarmsEnabled => 'تم تفعيل المنبهات الدقيقة';
@@ -91,7 +91,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get getStarted => 'ابدأ الآن';
 
   @override
-  String get splashTitle => 'منبه الدواء';
+  String get splashTitle => 'Mordy';
 
   @override
   String get takeNow => 'تناول الآن';
@@ -109,7 +109,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get snoozedMedicationAlarm => 'منبه دواء مؤجل';
 
   @override
-  String get alarmScreenTitle => 'منبه الدواء';
+  String get alarmScreenTitle => 'Mordy';
 
   @override
   String get csvHeaderMedicationName => 'medication_name';
@@ -188,7 +188,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get aboutUsBody =>
-      'منبه الدواء يساعدك على إدارة الجداول والتنبيهات دون اتصال.';
+      'Mordy يساعدك على إدارة الجداول والتنبيهات دون اتصال.';
 
   @override
   String get help => 'مساعدة';
