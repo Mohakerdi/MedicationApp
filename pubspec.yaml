@@ -48,6 +48,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.4+4
   tutorial_coach_mark: ^1.2.13
   audioplayers: ^6.1.0
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -106,3 +107,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_launcher_icons:
+  android: true
+  ios: true
+  windows: true
+  image_path: "assets/icons/app_icon.png"

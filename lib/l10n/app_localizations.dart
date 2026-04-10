@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Medication Alarm'**
+  /// **'Mordy'**
   String get appTitle;
 
   /// No description provided for @exactAlarmsEnabled.
@@ -251,7 +251,7 @@ abstract class AppLocalizations {
   /// No description provided for @splashTitle.
   ///
   /// In en, this message translates to:
-  /// **'Medication Alarm'**
+  /// **'Mordy'**
   String get splashTitle;
 
   /// No description provided for @takeNow.
@@ -287,7 +287,7 @@ abstract class AppLocalizations {
   /// No description provided for @alarmScreenTitle.
   ///
   /// In en, this message translates to:
-  /// **'Medication Alarm'**
+  /// **'Mordy'**
   String get alarmScreenTitle;
 
   /// No description provided for @csvHeaderMedicationName.
@@ -443,7 +443,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutUsBody.
   ///
   /// In en, this message translates to:
-  /// **'Medication Alarm helps you manage schedules and reminders offline.'**
+  /// **'Mordy helps you manage schedules and reminders offline.'**
   String get aboutUsBody;
 
   /// No description provided for @help.
