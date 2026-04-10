@@ -50,13 +50,13 @@ class OptionsActionTile extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final VoidCallback onTap;
 
   @override
@@ -65,7 +65,7 @@ class OptionsActionTile extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon),
       title: Text(title),
-      subtitle: Text(subtitle),
+      subtitle: subtitle == null ? null : Text(subtitle!),
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     );

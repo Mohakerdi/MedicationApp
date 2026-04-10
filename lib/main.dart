@@ -17,7 +17,13 @@ Future<void> main() async {
   } catch (_) {
     initialAlarmId = null;
   }
-  unawaited(notifications.requestUserPermissions());
+  unawaited(
+    notifications.requestUserPermissions().catchError((error, _) {
+      debugPrint(
+        'Failed to request notification/alarm permissions: ${error.toString()}',
+      );
+    }),
+  );
   final database = AppDatabase.instance;
   final scheduler = AlarmScheduler(database: database, notifications: notifications);
 

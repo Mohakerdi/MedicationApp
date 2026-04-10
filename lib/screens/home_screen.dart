@@ -42,6 +42,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const _defaultHour = 8;
   static const _defaultMinute = 0;
+  static const _recentlyOpenedAlarmCacheLimit = 50;
 
   late final HomeViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
@@ -60,9 +61,11 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<int>? _selectionSubscription;
   Timer? _dueAlarmTimer;
   bool _openingAlarmScreen = false;
-  final Set<int> _recentlyOpenedAlarmIds = <int>{};
+  bool _dueAlarmCheckInFlight = false;
+  final List<int> _recentlyOpenedAlarmIds = <int>[];
   int _tabIndex = 0;
   bool _tutorialPresented = false;
+  bool _tutorialVisible = false;
 
   @override
   void initState() {
@@ -112,6 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     _tutorialPresented = true;
+    _tutorialVisible = true;
     final l10n = AppLocalizations.of(context)!;
     final targets = [
       TargetFocus(
@@ -159,8 +163,12 @@ class _HomeScreenState extends State<HomeScreen> {
       targets: targets,
       hideSkip: false,
       textSkip: l10n.skip,
-      onFinish: () => widget.settingsViewModel.markHomeTutorialSeen(),
+      onFinish: () {
+        _tutorialVisible = false;
+        widget.settingsViewModel.markHomeTutorialSeen();
+      },
       onSkip: () {
+        _tutorialVisible = false;
         widget.settingsViewModel.markHomeTutorialSeen();
         return true;
       },
@@ -275,26 +283,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkAndOpenDueAlarm() async {
-    if (!mounted || _openingAlarmScreen) {
+    if (!mounted || _openingAlarmScreen || _tutorialVisible || _dueAlarmCheckInFlight) {
       return;
     }
-    final dueAlarm = await _viewModel.getDueAlarmForImmediateDisplay();
-    if (!mounted || dueAlarm == null) {
-      return;
-    }
-    final alarmId = dueAlarm.alarm.id;
-    if (_recentlyOpenedAlarmIds.contains(alarmId)) {
-      return;
-    }
-
-    _openingAlarmScreen = true;
-    _recentlyOpenedAlarmIds.add(alarmId);
     try {
+      _dueAlarmCheckInFlight = true;
+      final dueAlarm = await _viewModel.getDueAlarmForImmediateDisplay();
+      if (!mounted || dueAlarm == null) {
+        return;
+      }
+      final alarmId = dueAlarm.alarm.id;
+      if (_recentlyOpenedAlarmIds.contains(alarmId)) {
+        return;
+      }
+
+      _openingAlarmScreen = true;
+      _recentlyOpenedAlarmIds.add(alarmId);
       await _openAlarm(dueAlarm);
     } finally {
+      _dueAlarmCheckInFlight = false;
       _openingAlarmScreen = false;
-      if (_recentlyOpenedAlarmIds.length > 50) {
-        _recentlyOpenedAlarmIds.remove(_recentlyOpenedAlarmIds.first);
+      while (_recentlyOpenedAlarmIds.length > _recentlyOpenedAlarmCacheLimit) {
+        _recentlyOpenedAlarmIds.removeAt(0);
       }
     }
   }
@@ -427,6 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSchedulesTab(AppLocalizations l10n) {
+    final numberOfDoses = _medicationKind == MedicationKind.daily ? _doseCount : 1;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -575,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 const SizedBox(height: 8),
-                for (var i = 0; i < (_medicationKind == MedicationKind.daily ? _doseCount : 1); i++)
+                for (var i = 0; i < numberOfDoses; i++)
                   Builder(
                     builder: (context) {
                       final doseTime = i < _times.length ? _times[i] : _times.last;
@@ -673,9 +684,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withOpacity(0.12),
+                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12),
                   foregroundColor: Theme.of(context).colorScheme.primary,
                   child: const Icon(Icons.tune),
                 ),
@@ -781,20 +790,17 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         OptionsGroupCard(
           icon: Icons.import_export,
-          title: 'Backup & Restore',
+          title: '${l10n.exportCsv} / ${l10n.importCsv}',
           children: [
             OptionsActionTile(
               icon: Icons.upload_file,
-              title: 'Export medication alarms',
-              subtitle:
-                  'Create a CSV backup file for your schedules and alarms.',
+              title: l10n.exportCsv,
               onTap: _exportCsv,
             ),
             const Divider(height: 16),
             OptionsActionTile(
               icon: Icons.download_for_offline_outlined,
-              title: 'Import medication alarms',
-              subtitle: 'Import schedules and alarms from a CSV backup file.',
+              title: l10n.importCsv,
               onTap: _importCsv,
             ),
           ],
@@ -802,7 +808,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
         OptionsGroupCard(
           icon: Icons.settings_outlined,
-          title: 'App',
+          title: l10n.appTitle,
           children: [
             OptionsActionTile(
               icon: Icons.delete_forever,

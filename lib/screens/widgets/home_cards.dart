@@ -35,8 +35,10 @@ class MedicationPlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final kind = plan.medication.kind;
-    final timeText =
-        '${plan.schedule.hour.toString().padLeft(2, '0')}:${plan.schedule.minute.toString().padLeft(2, '0')}';
+    final timeText = TimeOfDay(
+      hour: plan.schedule.hour,
+      minute: plan.schedule.minute,
+    ).format(context);
 
     return Card(
       elevation: 0,
