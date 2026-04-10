@@ -22,6 +22,7 @@
   "noMedicationsYet": "لا توجد أدوية بعد.",
   "exportCsv": "تصدير CSV",
   "importCsv": "استيراد CSV",
+  "exportUnsupported": "تصدير CSV غير مدعوم على الويب حالياً",
   "csvExportedAt": "تم تصدير CSV إلى: {path}",
   "@csvExportedAt": {
     "placeholders": {
@@ -31,7 +32,9 @@
   "csvImportDone": "تم استيراد {count} جدول",
   "@csvImportDone": {
     "placeholders": {
-      "count": {}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "csvImportInvalid": "ملف CSV غير صالح",

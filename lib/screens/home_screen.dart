@@ -33,11 +33,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const _defaultHour = 8;
+  static const _defaultMinute = 0;
+
   late final HomeViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
-  TimeOfDay _time = const TimeOfDay(hour: 8, minute: 0);
+  TimeOfDay _time = const TimeOfDay(hour: _defaultHour, minute: _defaultMinute);
   StreamSubscription<int>? _selectionSubscription;
 
   @override
@@ -82,7 +85,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _nameController.clear();
     _dosageController.clear();
     if (mounted) {
-      setState(() => _time = const TimeOfDay(hour: 8, minute: 0));
+      setState(
+        () => _time = const TimeOfDay(
+          hour: _defaultHour,
+          minute: _defaultMinute,
+        ),
+      );
     }
   }
 
@@ -148,6 +156,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.csvExportedAt(path))));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.exportUnsupported)));
     }
   }
 
@@ -163,9 +175,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (result == null || result.files.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.csvImportCancelled)));
       return;
     }
 
@@ -190,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.csvImportDone('$count'))));
+    ).showSnackBar(SnackBar(content: Text(l10n.csvImportDone(count))));
   }
 
   @override

@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -75,10 +77,8 @@ class HomeViewModel extends ChangeNotifier {
 
     final csv = csvService.exportPlans(_plans, headers: headers);
     final dir = await getApplicationDocumentsDirectory();
-    final now = DateTime.now();
-    final stamp =
-        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-    final file = File('${dir.path}/$filePrefix$stamp.csv');
+    final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final file = File(p.join(dir.path, '$filePrefix$timestamp.csv'));
     await file.writeAsString(csv);
     return file.path;
   }

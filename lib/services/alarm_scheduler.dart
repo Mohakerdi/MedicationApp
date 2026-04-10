@@ -154,6 +154,8 @@ class AlarmScheduler {
   }
 
   String _text({required String english, required String arabic}) {
+    // Notification scheduling runs outside widget context, so we use
+    // platform locale directly instead of AppLocalizations here.
     final languageCode = ui.PlatformDispatcher.instance.locale.languageCode;
     return languageCode == 'ar' ? arabic : english;
   }
