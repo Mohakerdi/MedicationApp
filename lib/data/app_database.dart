@@ -23,8 +23,9 @@ class AppDatabase {
     final path = p.join(dbPath, 'medication_alarm.db');
     _database = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
     return _database!;
   }
@@ -48,6 +49,10 @@ class AppDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         dosage TEXT NOT NULL,
+        kind TEXT NOT NULL DEFAULT 'daily',
+        interval_days INTEGER NOT NULL DEFAULT 1,
+        total_pills INTEGER NOT NULL DEFAULT 0,
+        taken_pills INTEGER NOT NULL DEFAULT 0,
         is_active INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL
       )
@@ -89,12 +94,53 @@ class AppDatabase {
     ''');
   }
 
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        "ALTER TABLE medications ADD COLUMN kind TEXT NOT NULL DEFAULT 'daily'",
+      );
+      await db.execute(
+        'ALTER TABLE medications ADD COLUMN interval_days INTEGER NOT NULL DEFAULT 1',
+      );
+      await db.execute(
+        'ALTER TABLE medications ADD COLUMN total_pills INTEGER NOT NULL DEFAULT 0',
+      );
+      await db.execute(
+        'ALTER TABLE medications ADD COLUMN taken_pills INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+  }
+
   Future<MedicationPlan> createMedicationPlan({
     required String name,
     required String dosage,
     required int hour,
     required int minute,
     required String timezoneName,
+    MedicationKind kind = MedicationKind.daily,
+    int intervalDays = 1,
+    int totalPills = 0,
+  }) async {
+    final plans = await createMedicationPlans(
+      name: name,
+      dosage: dosage,
+      times: [(hour: hour, minute: minute)],
+      timezoneName: timezoneName,
+      kind: kind,
+      intervalDays: intervalDays,
+      totalPills: totalPills,
+    );
+    return plans.first;
+  }
+
+  Future<List<MedicationPlan>> createMedicationPlans({
+    required String name,
+    required String dosage,
+    required List<({int hour, int minute})> times,
+    required String timezoneName,
+    MedicationKind kind = MedicationKind.daily,
+    int intervalDays = 1,
+    int totalPills = 0,
   }) async {
     final db = await database;
     return db.transaction((txn) async {
@@ -104,37 +150,52 @@ class AppDatabase {
         {
           'name': name,
           'dosage': dosage,
+          'kind': kind.value,
+          'interval_days': intervalDays < 1 ? 1 : intervalDays,
+          'total_pills': totalPills < 0 ? 0 : totalPills,
+          'taken_pills': 0,
           'is_active': 1,
           'created_at': now,
         },
       );
 
-      final scheduleId = await txn.insert(
-        'dose_schedules',
-        {
-          'medication_id': medicationId,
-          'hour': hour,
-          'minute': minute,
-          'timezone_name': timezoneName,
-        },
+      final medication = Medication(
+        id: medicationId,
+        name: name,
+        dosage: dosage,
+        kind: kind,
+        intervalDays: intervalDays < 1 ? 1 : intervalDays,
+        totalPills: totalPills < 0 ? 0 : totalPills,
+        takenPills: 0,
+        isActive: true,
+        createdAt: DateTime.parse(now),
       );
 
-      return MedicationPlan(
-        medication: Medication(
-          id: medicationId,
-          name: name,
-          dosage: dosage,
-          isActive: true,
-          createdAt: DateTime.parse(now),
-        ),
-        schedule: DoseSchedule(
-          id: scheduleId,
-          medicationId: medicationId,
-          hour: hour,
-          minute: minute,
-          timezoneName: timezoneName,
-        ),
-      );
+      final plans = <MedicationPlan>[];
+      for (final time in times) {
+        final scheduleId = await txn.insert(
+          'dose_schedules',
+          {
+            'medication_id': medicationId,
+            'hour': time.hour,
+            'minute': time.minute,
+            'timezone_name': timezoneName,
+          },
+        );
+        plans.add(
+          MedicationPlan(
+            medication: medication,
+            schedule: DoseSchedule(
+              id: scheduleId,
+              medicationId: medicationId,
+              hour: time.hour,
+              minute: time.minute,
+              timezoneName: timezoneName,
+            ),
+          ),
+        );
+      }
+      return plans;
     });
   }
 
@@ -145,6 +206,10 @@ class AppDatabase {
         m.id AS m_id,
         m.name AS m_name,
         m.dosage AS m_dosage,
+        m.kind AS m_kind,
+        m.interval_days AS m_interval_days,
+        m.total_pills AS m_total_pills,
+        m.taken_pills AS m_taken_pills,
         m.is_active AS m_is_active,
         m.created_at AS m_created_at,
         s.id AS s_id,
@@ -165,6 +230,10 @@ class AppDatabase {
               id: row['m_id'] as int,
               name: row['m_name'] as String,
               dosage: row['m_dosage'] as String,
+              kind: MedicationKindValue.fromValue(row['m_kind'] as String),
+              intervalDays: row['m_interval_days'] as int,
+              totalPills: row['m_total_pills'] as int,
+              takenPills: row['m_taken_pills'] as int,
               isActive: (row['m_is_active'] as int) == 1,
               createdAt: DateTime.parse(row['m_created_at'] as String),
             ),
@@ -238,6 +307,10 @@ class AppDatabase {
         m.id AS m_id,
         m.name AS m_name,
         m.dosage AS m_dosage,
+        m.kind AS m_kind,
+        m.interval_days AS m_interval_days,
+        m.total_pills AS m_total_pills,
+        m.taken_pills AS m_taken_pills,
         m.is_active AS m_is_active,
         m.created_at AS m_created_at
       FROM alarm_instances a
@@ -263,6 +336,10 @@ class AppDatabase {
         id: row['m_id'] as int,
         name: row['m_name'] as String,
         dosage: row['m_dosage'] as String,
+        kind: MedicationKindValue.fromValue(row['m_kind'] as String),
+        intervalDays: row['m_interval_days'] as int,
+        totalPills: row['m_total_pills'] as int,
+        takenPills: row['m_taken_pills'] as int,
         isActive: (row['m_is_active'] as int) == 1,
         createdAt: DateTime.parse(row['m_created_at'] as String),
       ),
@@ -328,6 +405,154 @@ class AppDatabase {
       limit: 1,
     );
     return rows.isNotEmpty;
+  }
+
+  Future<bool> hasAnyAlarmForSchedule(int scheduleId) async {
+    final db = await database;
+    final rows = await db.query(
+      'alarm_instances',
+      columns: ['id'],
+      where: 'schedule_id = ?',
+      whereArgs: [scheduleId],
+      limit: 1,
+    );
+    return rows.isNotEmpty;
+  }
+
+  Future<List<MedicationPlan>> getMedicationPlansByMedicationId(
+    int medicationId,
+  ) async {
+    final plans = await getMedicationPlans();
+    return plans.where((plan) => plan.medication.id == medicationId).toList();
+  }
+
+  Future<void> updateDoseScheduleTime({
+    required int scheduleId,
+    required int hour,
+    required int minute,
+  }) async {
+    final db = await database;
+    await db.update(
+      'dose_schedules',
+      {
+        'hour': hour,
+        'minute': minute,
+      },
+      where: 'id = ?',
+      whereArgs: [scheduleId],
+    );
+  }
+
+  Future<void> dismissPendingAlarmsForSchedule({
+    required int scheduleId,
+    required String action,
+  }) async {
+    final db = await database;
+    final rows = await db.query(
+      'alarm_instances',
+      where: 'schedule_id = ? AND status = ?',
+      whereArgs: [scheduleId, AlarmStatus.pending.value],
+    );
+    if (rows.isEmpty) {
+      return;
+    }
+
+    await db.transaction((txn) async {
+      for (final row in rows) {
+        final alarmId = row['id'] as int;
+        final medicationId = row['medication_id'] as int;
+        await txn.update(
+          'alarm_instances',
+          {'status': AlarmStatus.skipped.value},
+          where: 'id = ?',
+          whereArgs: [alarmId],
+        );
+        await txn.insert(
+          'dose_logs',
+          {
+            'medication_id': medicationId,
+            'alarm_instance_id': alarmId,
+            'action': action,
+            'acted_at': DateTime.now().toUtc().toIso8601String(),
+          },
+        );
+      }
+    });
+  }
+
+  Future<List<int>> getPendingAlarmIdsForSchedule(int scheduleId) async {
+    final db = await database;
+    final rows = await db.query(
+      'alarm_instances',
+      columns: ['id'],
+      where: 'schedule_id = ? AND status = ?',
+      whereArgs: [scheduleId, AlarmStatus.pending.value],
+    );
+    return rows.map((row) => row['id'] as int).toList();
+  }
+
+  Future<void> deleteDoseSchedule(int scheduleId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final scheduleRows = await txn.query(
+        'dose_schedules',
+        columns: ['medication_id'],
+        where: 'id = ?',
+        whereArgs: [scheduleId],
+        limit: 1,
+      );
+      if (scheduleRows.isEmpty) {
+        return;
+      }
+      final medicationId = scheduleRows.first['medication_id'] as int;
+      await txn.delete(
+        'dose_schedules',
+        where: 'id = ?',
+        whereArgs: [scheduleId],
+      );
+      final remaining = Sqflite.firstIntValue(
+        await txn.rawQuery(
+          'SELECT COUNT(*) FROM dose_schedules WHERE medication_id = ?',
+          [medicationId],
+        ),
+      );
+      if ((remaining ?? 0) == 0) {
+        await txn.update(
+          'medications',
+          {'is_active': 0},
+          where: 'id = ?',
+          whereArgs: [medicationId],
+        );
+      }
+    });
+  }
+
+  Future<void> incrementMedicationTakenPills(int medicationId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'medications',
+        columns: ['total_pills', 'taken_pills'],
+        where: 'id = ?',
+        whereArgs: [medicationId],
+        limit: 1,
+      );
+      if (rows.isEmpty) {
+        return;
+      }
+      final totalPills = rows.first['total_pills'] as int;
+      final currentTaken = rows.first['taken_pills'] as int;
+      final nextTaken = currentTaken + 1 > totalPills ? totalPills : currentTaken + 1;
+      await txn.update(
+        'medications',
+        {
+          'taken_pills': nextTaken,
+          if (totalPills > 0 && nextTaken >= totalPills) 'is_active': 0,
+        },
+        where: 'id = ?',
+        whereArgs: [medicationId],
+      );
+    });
   }
 
   Future<void> deleteAllData() async {

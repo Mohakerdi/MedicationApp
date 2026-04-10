@@ -1,51 +1,53 @@
-# Medication Alarm (Offline-First Flutter)
+# Mordy 💙
 
-This app is an offline-first medication reminder designed for reliability.
+> A small app with a deep name.  
+> **Mordy (مرضي)** carries a wordplay in Arabic that can feel like *“my illness”* and also *“a caring child who supports parents.”*  
+> This app is built around that same spirit: gentle care, consistency, and love in everyday medication routines.
 
-## What it implements
+---
 
-- Local-only persistence with SQLite (`sqflite`):
-  - `medications`
-  - `dose_schedules`
-  - `alarm_instances`
-  - `dose_logs`
-- Exact timezone-aware scheduling (`timezone` + `flutter_local_notifications`)
-- Full-screen Android alarm notifications for high urgency
-- Must-dismiss alarm screen with explicit actions:
-  - **Take now**
-  - **Snooze 10 min**
-  - **Skip**
-- Startup reconciliation:
-  - marks stale pending alarms as missed
-  - re-seeds/schedules missing alarms after reboot or process death
-- iOS-safe rolling horizon scheduling (next 14 days)
-- English + Arabic localization support
-- MVVM-style presentation flow with dedicated view models
-- Animated splash screen and one-time landing page onboarding
-- Centralized app theming in `lib/theme/`
-- Alarm schedule CSV export/import
-- Theme options (system/light/dark) and language switching
-- One-time tutorial coach marks for first open
-- Options tab for app controls (delete all, import/export, about/help/support)
-- Selectable alarm sounds from bundled assets or device files
-- Windows/Linux desktop database compatibility via `sqflite_common_ffi`
+## A quick feel ✨
 
-## Platform behavior
+![Pills GIF](https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif)
+![Clock GIF](https://media.giphy.com/media/3o7TKtnuHOHHUjR38Y/giphy.gif)
 
-### Android
+---
 
-- Primary target for true alarm-like behavior.
-- Uses full-screen intent notifications and exact alarm scheduling.
-- Includes manifest permissions and boot receiver wiring to improve persistence.
+## What Mordy is about 🌱
 
-### iOS
+Mordy helps you remember medicine in a way that feels human:
 
-- Uses high-urgency local notifications.
-- iOS may not force-open the app on lock screen like Android full-screen intents.
-- App schedules a rolling horizon of upcoming reminders.
+- Timely reminders that are hard to miss
+- Flexible schedules for real life
+- One-time medication tracking pill by pill
+- A calm, offline-first experience that stays with you
 
-## Notes
+---
 
-- No Firebase or internet dependency is required.
-- Data remains on-device only; uninstalling app removes data.
-- For production, add backup/export and richer accessibility tuning.
+## Core features 🕒💊
+
+- **Daily schedules** with up to 3 doses per day
+- **Interval schedules** (every 2 days, every 3 days, or weekly)
+- **One-time medications** with exact pill-count checkboxes
+- **Alarm actions**: Take now, Snooze, Skip, and swipe dismiss
+- **Edit schedules** anytime from the home list
+- **Arabic + English** support
+- **CSV import/export** for schedules
+- **Custom alarm sounds** (bundled or from device)
+- **Offline local data** with SQLite
+
+---
+
+## Platform notes 📱💻
+
+- **Android:** exact/full-screen reminder support for urgent alarms
+- **iOS:** rolling reminder scheduling optimized for platform behavior
+- **Desktop (Windows/Linux/macOS):** local database support and app window experience
+
+---
+
+## Why this matters ❤️
+
+Medication is not just a checklist.  
+It is often part of care, recovery, and family responsibility.  
+**Mordy** is meant to make that journey a little warmer and a little easier—one reminder at a time.
