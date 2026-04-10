@@ -12,6 +12,7 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  bool _fullScreenIntentAllowed = false;
 
   final StreamController<int> _alarmSelectionController =
       StreamController<int>.broadcast();
@@ -48,11 +49,13 @@ class NotificationService {
       );
 
       await _createAndroidChannels();
+      _fullScreenIntentAllowed = await _canUseFullScreenIntent();
 
       final launchDetails = await _plugin.getNotificationAppLaunchDetails();
       final payload = launchDetails?.notificationResponse?.payload;
       return _extractAlarmId(payload);
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Notification initialize failed: ${error.toString()}');
       return null;
     }
   }
@@ -99,7 +102,9 @@ class NotificationService {
         badge: true,
         sound: true,
       );
-    } catch (_) {}
+    } catch (error) {
+      debugPrint('Notification permission request failed: ${error.toString()}');
+    }
   }
 
   Future<bool> canScheduleExactAlarms() async {
@@ -132,14 +137,14 @@ class NotificationService {
     if (!_supportsNotificationScheduling) {
       return;
     }
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'medication_alarm_channel',
       'Medication alarms',
       channelDescription: 'Exact, full-screen alarms for medication reminders',
       category: AndroidNotificationCategory.alarm,
       importance: Importance.max,
       priority: Priority.max,
-      fullScreenIntent: true,
+      fullScreenIntent: _fullScreenIntentAllowed,
       autoCancel: false,
       ongoing: true,
       playSound: true,
@@ -166,7 +171,9 @@ class NotificationService {
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: 'alarm:$alarmId',
       );
-    } catch (_) {}
+    } catch (error) {
+      debugPrint('Schedule alarm failed for id $alarmId: ${error.toString()}');
+    }
   }
 
   Future<void> cancelAlarm(int alarmId) async {
@@ -221,6 +228,28 @@ class NotificationService {
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.linux;
+  }
+
+  Future<bool> _canUseFullScreenIntent() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
+    try {
+      final androidPlatform =
+          _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (androidPlatform == null) {
+        return false;
+      }
+
+      // Kept dynamic for compatibility with plugin API versions.
+      final dynamic dynamicPlatform = androidPlatform;
+      final allowed = await dynamicPlatform.canUseFullScreenIntent();
+      return allowed == true;
+    } catch (_) {
+      return false;
+    }
   }
 }
 
