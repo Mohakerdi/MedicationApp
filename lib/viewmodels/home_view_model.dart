@@ -72,10 +72,13 @@ class HomeViewModel extends ChangeNotifier {
   String _resolveTimezoneName() {
     try {
       return tz.local.name;
-    } on LateInitializationError {
-      final localName = DateTime.now().timeZoneName.trim();
-      return localName.isEmpty ? 'UTC' : localName;
+    } on LateInitializationError catch (error) {
+      debugPrint('Timezone local not initialized: $error');
+    } catch (error) {
+      debugPrint('Timezone lookup failed: $error');
     }
+    final localName = DateTime.now().timeZoneName.trim();
+    return localName.isEmpty ? 'UTC' : localName;
   }
 
   Future<AlarmWithMedication?> getAlarmById(int alarmId) {
