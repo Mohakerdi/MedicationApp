@@ -8,8 +8,8 @@
 
 ## A quick feel ✨
 
-![Pills GIF](https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif)
-![Clock GIF](https://media.giphy.com/media/3o7TKtnuHOHHUjR38Y/giphy.gif)
+![Clock GIF](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZmFsMXhjeDFvOGVnMnJtY3RsOWwyNzlub3YwcWpkdGI0enlzZW1laiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/OBnwDJW77acLK/giphy.gif)
+![Pill GIF](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExaWxkbnVnNTd5d3h6MnJuM2JmOWlsajh4ejQycGk0dHo3NGM5cmgxbCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/kIuDGjucy9vsMRaT63/giphy.gif)
 
 ---
 
