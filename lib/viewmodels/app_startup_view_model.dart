@@ -23,7 +23,7 @@ class AppStartupViewModel extends ChangeNotifier {
         _prefsInitTimeout,
       );
       await Future.wait<void>([
-        prefsFuture.then((_) {}),
+        prefsFuture.then<void>((_) {}),
         Future<void>.delayed(_minimumSplashDuration),
       ]);
       final prefs = await prefsFuture;

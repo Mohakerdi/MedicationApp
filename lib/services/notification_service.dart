@@ -103,6 +103,9 @@ class NotificationService {
   }
 
   Future<bool> canScheduleExactAlarms() async {
+    if (!_supportsNotificationScheduling) {
+      return false;
+    }
     if (defaultTargetPlatform != TargetPlatform.android) {
       return true;
     }
