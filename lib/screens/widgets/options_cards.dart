@@ -17,7 +17,7 @@ class OptionsGroupCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+      color: scheme.surfaceContainerHighest.withOpacity(0.55),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -28,7 +28,7 @@ class OptionsGroupCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: scheme.primary.withValues(alpha: 0.12),
+                  backgroundColor: scheme.primary.withOpacity(0.12),
                   foregroundColor: scheme.primary,
                   child: Icon(icon, size: 16),
                 ),

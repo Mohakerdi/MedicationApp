@@ -73,6 +73,28 @@ class HomeViewModel extends ChangeNotifier {
     return database.getAlarmWithMedication(alarmId);
   }
 
+  Future<AlarmWithMedication?> getDueAlarmForImmediateDisplay({
+    Duration lookback = const Duration(minutes: 1),
+    Duration lookahead = const Duration(seconds: 30),
+  }) async {
+    final nowUtc = DateTime.now().toUtc();
+    final pending = await database.getPendingAlarmInstances();
+
+    for (final alarm in pending) {
+      if (alarm.triggerAt.isAfter(nowUtc.add(lookahead))) {
+        break;
+      }
+      if (alarm.triggerAt.isBefore(nowUtc.subtract(lookback))) {
+        continue;
+      }
+      final full = await database.getAlarmWithMedication(alarm.id);
+      if (full != null) {
+        return full;
+      }
+    }
+    return null;
+  }
+
   Future<void> requestAlarmPermissions() async {
     await notifications.requestUserPermissions();
     await load();

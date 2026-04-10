@@ -12,7 +12,7 @@ class ModernSectionCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+      color: scheme.surfaceContainerHighest.withOpacity(0.55),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(padding: const EdgeInsets.all(16), child: child),
     );
@@ -46,7 +46,7 @@ class MedicationPlanCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              scheme.primaryContainer.withValues(alpha: 0.45),
+              scheme.primaryContainer.withOpacity(0.45),
               scheme.surface,
             ],
             begin: Alignment.topLeft,
@@ -61,7 +61,7 @@ class MedicationPlanCard extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: scheme.primary.withValues(alpha: 0.12),
+                    backgroundColor: scheme.primary.withOpacity(0.12),
                     foregroundColor: scheme.primary,
                     child: const Icon(Icons.medication_outlined),
                   ),
