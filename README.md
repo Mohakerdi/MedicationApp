@@ -1,16 +1,41 @@
-# medecation_app
+# Medication Alarm (Offline-First Flutter)
 
-A new Flutter project.
+This app is an offline-first medication reminder designed for reliability.
 
-## Getting Started
+## What it implements
 
-This project is a starting point for a Flutter application.
+- Local-only persistence with SQLite (`sqflite`):
+  - `medications`
+  - `dose_schedules`
+  - `alarm_instances`
+  - `dose_logs`
+- Exact timezone-aware scheduling (`timezone` + `flutter_local_notifications`)
+- Full-screen Android alarm notifications for high urgency
+- Must-dismiss alarm screen with explicit actions:
+  - **Take now**
+  - **Snooze 10 min**
+  - **Skip**
+- Startup reconciliation:
+  - marks stale pending alarms as missed
+  - re-seeds/schedules missing alarms after reboot or process death
+- iOS-safe rolling horizon scheduling (next 14 days)
 
-A few resources to get you started if this is your first Flutter project:
+## Platform behavior
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Android
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Primary target for true alarm-like behavior.
+- Uses full-screen intent notifications and exact alarm scheduling.
+- Includes manifest permissions and boot receiver wiring to improve persistence.
+
+### iOS
+
+- Uses high-urgency local notifications.
+- iOS may not force-open the app on lock screen like Android full-screen intents.
+- App schedules a rolling horizon of upcoming reminders.
+
+## Notes
+
+- No Firebase or internet dependency is required.
+- Data remains on-device only; uninstalling app removes data.
+- For production, add backup/export and richer accessibility tuning.
