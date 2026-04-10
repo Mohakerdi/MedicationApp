@@ -24,6 +24,7 @@ class HomeViewModel extends ChangeNotifier {
   final AlarmScheduler scheduler;
   final NotificationService notifications;
   final CsvAlarmTransferService csvService;
+  static const String _fallbackTimezoneName = 'UTC';
 
   List<MedicationPlan> _plans = const [];
   bool _exactAlarmGranted = true;
@@ -53,7 +54,7 @@ class HomeViewModel extends ChangeNotifier {
     required int intervalDays,
     required int totalPills,
   }) async {
-    final timezoneName = tz.local.name;
+    final timezoneName = _resolveTimezoneName();
     final plans = await database.createMedicationPlans(
       name: name.trim(),
       dosage: dosage.trim(),
@@ -67,6 +68,17 @@ class HomeViewModel extends ChangeNotifier {
       await scheduler.seedForPlan(plan);
     }
     await load();
+  }
+
+  String _resolveTimezoneName() {
+    try {
+      return tz.local.name;
+    } on LateInitializationError catch (error) {
+      debugPrint('Timezone local not initialized on $defaultTargetPlatform: $error');
+    } catch (error) {
+      debugPrint('Timezone lookup failed on $defaultTargetPlatform: $error');
+    }
+    return _fallbackTimezoneName;
   }
 
   Future<AlarmWithMedication?> getAlarmById(int alarmId) {
