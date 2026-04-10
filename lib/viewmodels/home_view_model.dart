@@ -72,7 +72,7 @@ class HomeViewModel extends ChangeNotifier {
   String _resolveTimezoneName() {
     try {
       return tz.local.name;
-    } catch (_) {
+    } on LateInitializationError {
       final localName = DateTime.now().timeZoneName.trim();
       return localName.isEmpty ? 'UTC' : localName;
     }
