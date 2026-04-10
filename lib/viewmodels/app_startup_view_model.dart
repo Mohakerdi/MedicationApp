@@ -21,7 +21,7 @@ class AppStartupViewModel extends ChangeNotifier {
     try {
       final results = await Future.wait<Object>([
         SharedPreferences.getInstance().timeout(_prefsInitTimeout),
-        Future<void>.delayed(_minimumSplashDuration),
+        Future<Object>.delayed(_minimumSplashDuration),
       ]);
       final prefs = results.first as SharedPreferences;
       final seenLanding = prefs.getBool(_seenLandingKey) ?? false;
