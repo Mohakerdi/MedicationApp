@@ -20,7 +20,7 @@ Future<void> main() async {
   unawaited(
     notifications.requestUserPermissions().catchError((error, _) {
       debugPrint(
-        'Failed to request notification/alarm permissions: ${error.toString()}',
+        'Request notification/alarm permissions failed: ${error.toString()}',
       );
     }),
   );

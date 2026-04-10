@@ -79,6 +79,7 @@ class HomeViewModel extends ChangeNotifier {
   }) async {
     final nowUtc = DateTime.now().toUtc();
     final pending = await database.getPendingAlarmInstances();
+    pending.sort((a, b) => a.triggerAt.compareTo(b.triggerAt));
 
     for (final alarm in pending) {
       if (alarm.triggerAt.isAfter(nowUtc.add(lookahead))) {

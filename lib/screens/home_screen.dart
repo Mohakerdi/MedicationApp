@@ -67,6 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _tutorialPresented = false;
   bool _tutorialVisible = false;
 
+  int get _activeDoseCount => _medicationKind == MedicationKind.daily ? _doseCount : 1;
+
   @override
   void initState() {
     super.initState();
@@ -191,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
       name: _nameController.text,
       dosage: _dosageController.text,
       times: _times
-          .take(_medicationKind == MedicationKind.daily ? _doseCount : 1)
+          .take(_activeDoseCount)
           .map((time) => (hour: time.hour, minute: time.minute))
           .toList(),
       kind: _medicationKind,
@@ -303,8 +305,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } finally {
       _dueAlarmCheckInFlight = false;
       _openingAlarmScreen = false;
-      while (_recentlyOpenedAlarmIds.length > _recentlyOpenedAlarmCacheLimit) {
-        _recentlyOpenedAlarmIds.removeAt(0);
+      final overflow = _recentlyOpenedAlarmIds.length - _recentlyOpenedAlarmCacheLimit;
+      if (overflow > 0) {
+        _recentlyOpenedAlarmIds.removeRange(0, overflow);
       }
     }
   }
@@ -437,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSchedulesTab(AppLocalizations l10n) {
-    final numberOfDoses = _medicationKind == MedicationKind.daily ? _doseCount : 1;
+    final numberOfDoses = _activeDoseCount;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
